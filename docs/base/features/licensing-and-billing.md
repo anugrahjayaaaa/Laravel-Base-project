@@ -110,14 +110,19 @@ Email reminder/notifications ARE allowed (Laravel notification class; e.g.
 7 days before expiry, on failed payment, on downgrade). Checked at activation
 + on request entry (cached in `settings`), not a per-second cron.
 
-## 4. Entitlement service (seam `for($scope)`)
+## 4. Entitlement service (seam `for($scope, $user)`)
 
 ```php
 // app/Services/PlanService.php
 final class PlanService
 {
-    // Model 1: $scope = null. Model 2: $scope = Tenant.
-    public static function for(?Model $scope = null): self
+    // Model 1: $scope = null, $user = null. Model 2: $scope = Tenant.
+    // Per-user mode: $user = resolved User (second arg).
+    //
+    // Production callers use PlanService::for($user) — the method auto-detects
+    // a User passed as the first argument and promotes it to the $user param.
+    // Tests may use the explicit form PlanService::for(null, $user).
+    public static function for(?object $scope = null, ?User $user = null): self
     {
         $slug = $scope
             ? $scope->plan_slug                       // Model 2: plan per tenant
@@ -139,19 +144,48 @@ final class PlanService
 }
 ```
 
-Usage: `Plan::for()->can('kanban')`, `Plan::for()->membersLeft() === 0`.
+Usage: `Plan::for(user($user))->can('kanban')`, `Plan::for(null)->membersLeft() === 0`.
 One gateway → root-cause style, not checking inside every controller.
+
+### 4.1 Per-user mode resolution
+```
+User → License (status=active, not expired) → License.plan_slug → Plan
+```
+When `license_mode = per_user`, `PlanService::for($user)` detects the User
+argument and resolves the user's active license. If no active license exists,
+falls back to `Setting::get('default_plan', 'free')`.
+
+`PlanService::for($user)` works because the method auto-detects a User passed
+as the first argument — callers do NOT need to know about the two-argument form.
+
+### 4.2 License key format (per-user)
+```
+license_key = "LIC-" . planSlug . "-" . HASH(planSlug . "|" . expires . "|u" . userId . secret)
+```
+Global licenses omit the `|u{userId}` segment — backward compatible with the
+old key format. `LicenseService::verify()` includes `user_id` when
+regenerating the key for per-user licenses.
 
 ## 5. Flow
 
-### License activation (Model 1, no PG)
+### License activation (Model 1 global, no PG)
 ```
 admin enters license_key in UI/console
   -> LicenseService::activate(key)
        -> verify signature (re-hash with license_secret) + row exists
        -> settings.active_plan = plan_slug
        -> settings.license_key = key
-  -> plan applies instantly, features gated via Plan::for()
+  -> plan applies instantly, features gated via PlanService::for()
+```
+
+### License activation (per-user mode)
+```
+LicenseService::activate(key, issuedTo, forUser)
+  -> finds license row by key + user_id
+  -> verifies signature (key includes |u{userId})
+  -> sets status='active' on that user's license ONLY
+  -> does NOT touch settings.active_plan / settings.license_key
+  -> does NOT revoke other users' licenses
 ```
 
 ### License issuance — two paths, one method
@@ -402,8 +436,8 @@ recent payments (with user) + active licenses (with user/expiry).
 - Permissions: `billing.view` (admin), `billing.cancel` (user). Seeded.
 
 ### 12.4 Notes
-- Model 1 (per-instance) still applies for the *global* `active_plan` setting;
-  per-user subscription tracking rides on `License.user_id` + `Payment.user_id`.
+|- `License`: +`user_id` FK (per-subscriber ownership; scope `active()` = active + not expired). Per-user mode uses this for plan resolution (see §4.1).
+|`- `User`: `payments()`, `licenses()`, `license()` (active hasOne), `isSuperAdmin()`.
 - Invoice is dummy (no real PG); swap `BillingService::checkout` for Midtrans
   when `billing.fake=false` — PDF + portal unchanged.
 
