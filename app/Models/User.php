@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -30,6 +31,19 @@ class User extends Authenticatable implements MustVerifyEmail
     public function licenses()
     {
         return $this->hasMany(License::class);
+    }
+
+    /** Current active license: status=active AND not expired.
+     *  Used via $user->license (dynamic property from License relationship).
+     *  Returns null when user has no valid license — caller must handle Free fallback. */
+    public function license(): HasOne
+    {
+        return $this->hasOne(License::class)
+            ->where('status', 'active')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->orderBy('id', 'desc');
     }
 
     /** True when this user holds an active, non-expired license (subscriber). */

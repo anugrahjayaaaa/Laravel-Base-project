@@ -67,6 +67,7 @@ return [
     'license_revoked' => 'Revoked — downgraded to Free',
     'license_none' => 'No license — Free plan',
     'license_status' => 'License: :status',
+    'license_expiring_warning' => 'Your :plan plan expires in :days days (:date). Your account will switch to the Free plan after expiration.',
 
     // ── users ──
     'users' => 'Users',

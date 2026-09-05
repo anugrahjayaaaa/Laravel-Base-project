@@ -26,6 +26,11 @@ final class UserService
         ]);
         $user->syncRoles($this->rolesFromInput($data));
 
+        // per_user mode: provision a default Free license for the new user
+        if (Setting::get('license_mode', 'global') === 'per_user') {
+            LicenseService::defaultLicenseForUser($user);
+        }
+
         return $user;
     }
 

@@ -67,6 +67,7 @@ return [
     'license_revoked' => 'Dicabut — beralih ke Gratis',
     'license_none' => 'Tidak ada lisensi — Paket Gratis',
     'license_status' => 'Lisensi: :status',
+    'license_expiring_warning' => 'Paket :plan Anda kedaluwarsa dalam :days hari (:date). Akun Anda akan beralih ke Paket Gratis setelah kedaluwarsa.',
 
     // ── users ──
     'users' => 'Pengguna',

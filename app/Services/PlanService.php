@@ -28,20 +28,29 @@ final class PlanService
         $this->license = $license;
     }
 
-    /** Model 1: $scope = null. Model 2: $scope = Tenant. */
+    /** Model 1: $scope = null. Model 2: $scope = Tenant.
+     *  For per_user mode, pass $user as second arg or first — both work. */
     public static function for(?object $scope = null, ?User $user = null): self
     {
-        // ponytail: Model 2 seam — read plan_slug from tenant when present
-        // Default plan (no license) vs active_plan (license runtime). See docs/licensing-and-billing.md §3.
+        // Auto-detect: if $scope is a User and $user wasn't passed separately,
+        // treat $scope as the per-user User. This fixes production callers that
+        // use PlanService::for($user) instead of PlanService::for(null, $user).
+        if ($user === null && $scope instanceof User) {
+            $user = $scope;
+            $scope = null;
+        }
+
         $mode = Setting::get('license_mode', 'global');
 
-        // Per-user mode: resolve plan from user's own license
+        // Per-user mode: resolve plan from user's own active license
         if ($mode === 'per_user' && $user) {
-            $slug = $user->license?->plan_slug ?? Setting::get('default_plan', 'free');
-            $license = $user->license;
+            $license = $user->license()->first();
+            $slug = $license
+                ? $license->getAttribute('plan_slug')
+                : Setting::get('default_plan', 'free');
             $plan = Plan::where('slug', $slug)->firstOrFail();
 
-            return new self($plan, $license);
+            return new self($plan, $license instanceof License ? $license : null);
         }
 
         $licenseKey = Setting::get('license_key');
@@ -137,6 +146,12 @@ final class PlanService
         // Free plan with empty allowed_permissions = deny all (deny-by-default).
         // Non-empty allowed_permissions acts as a whitelist.
         return in_array($permission, $allowed, true);
+    }
+
+    /** The resolved Plan model. */
+    public function plan(): Plan
+    {
+        return $this->plan;
     }
 
     /** No-op: permissions are derived at runtime via Role ∩ Plan, not synced to Users.

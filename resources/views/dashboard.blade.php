@@ -1,3 +1,7 @@
+@php
+use App\Models\User;
+use App\Services\LicenseService;
+@endphp
 @extends('layouts.app')
 @section('content')
 <div class="row g-3 mb-3">
@@ -52,6 +56,23 @@
         <span class="opacity-75 ms-1">({{ $activePlan ?? ui('free_plan') }})</span>
     </span>
 </div>
+
+{{-- 7-day expiration warning (per_user mode) --}}
+@unless($user->isSuperAdmin())
+@php
+    $warningLicense = $license ?? LicenseService::activeLicense();
+@endphp
+@if($warningLicense && $warningLicense->expires_at && $warningLicense->expires_at->isFuture() && $warningLicense->expires_at->lte(now()->addDays(7)))
+<div class="alert alert-warning mb-3" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ ui('license_expiring_warning', [
+        'days' => max(0, (int) now()->diffInDays($warningLicense->expires_at)),
+        'plan' => $warningLicense->plan_slug,
+        'date' => $warningLicense->expires_at->format('M d, Y'),
+    ]) }}
+</div>
+@endif
+@endunless
 
 <div class="card shadow-sm border-0">
     <div class="card-body">

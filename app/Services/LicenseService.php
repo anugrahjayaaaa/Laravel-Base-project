@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\License;
 use App\Models\Plan;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 /**
@@ -18,8 +19,8 @@ use Illuminate\Support\Str;
  */
 final class LicenseService
 {
-    /** Build the signed key string. */
-    private static function sign(string $slug, ?string $expiresAt): string
+    /** Build the signed key string. Includes userId for per-user uniqueness. */
+    private static function sign(string $slug, ?string $expiresAt, ?int $userId = null): string
     {
         $secret = config('app.license_secret');
 
@@ -33,7 +34,7 @@ final class LicenseService
             $secret = 'dev-license-secret';
         }
 
-        $Payload = $slug.'|'.($expiresAt ?? 'lifetime');
+        $Payload = $slug.'|'.($expiresAt ?? 'lifetime').($userId ? '|u'.$userId : '');
         $hash = substr(sha1($Payload.$secret), 0, 12);
 
         return 'LIC-'.Str::upper($slug).'-'.Str::upper($hash);
@@ -48,7 +49,15 @@ final class LicenseService
         $expiresAt = $attrs['expires_at'] ?? null;
         $type = $attrs['type'] ?? ($expiresAt ? 'recurring' : 'manual');
 
-        $key = self::sign($planSlug, $expiresAt);
+        $key = self::sign($planSlug, $expiresAt, $attrs['user_id'] ?? null);
+
+        // ponytail: idempotent — if a license with this key already exists, reactivate and return
+        $existing = License::where('license_key', $key)->first();
+        if ($existing) {
+            $existing->update(['status' => 'active']);
+
+            return $key;
+        }
 
         // ponytail: snapshot plan limits/features at issue time (catalog versioning, §10.8)
         License::create([
@@ -66,11 +75,11 @@ final class LicenseService
     }
 
     /**
-     * Activate a license on this instance. Verifies signature + row, then
-     * writes settings atomically. Race-safe (doc §10.9): only one active
-     * license per instance; client cannot flip settings.active_plan alone.
+     * Activate a license. In global mode, writes to global settings and revokes
+     * all other active licenses. In per_user mode, only the target user's license
+     * is affected — no global settings change, no cross-user revocation.
      */
-    public static function activate(string $key, ?string $issuedTo = null): bool
+    public static function activate(string $key, ?string $issuedTo = null, ?User $forUser = null): bool
     {
         $license = License::where('license_key', $key)->first();
 
@@ -81,7 +90,17 @@ final class LicenseService
             return false;
         }
 
-        // ponytail: single active license per instance — revoke any other active one
+        // Per-user activation (per_user mode with explicit user): just update the license
+        // without touching global settings or revoking other users' licenses.
+        if ($forUser) {
+            $license->update(['issued_to' => $issuedTo ?? $forUser->email, 'status' => 'active']);
+            activity()->withProperties(['plan' => $license->plan_slug, 'user_id' => $license->user_id])
+                ->log('license.activated');
+
+            return true;
+        }
+
+        // Global mode: existing behavior — single active license per instance
         License::where('status', 'active')
             ->where('id', '!=', $license->id)
             ->update(['status' => 'expired']);
@@ -100,15 +119,49 @@ final class LicenseService
     /** Verify the key's signature against the stored license. */
     public static function verify(string $key, License $license): bool
     {
-        $expected = self::sign($license->plan_slug, $license->expires_at?->format('Y-m-d H:i:s'));
+        $expected = self::sign($license->plan_slug, $license->expires_at?->format('Y-m-d H:i:s'), $license->user_id);
 
         return hash_equals($expected, $key);
     }
 
-    /** Status of the currently activated license (or 'none'). */
-    public static function status(): string
+    /**
+     * Issue a license for a specific user (per_user mode).
+     * Returns the signed key. Unlike activate(), this does NOT touch global settings.
+     */
+    public static function issueFor(User $user, string $planSlug, array $attrs = []): string
     {
-        $license = self::activeLicense();
+        $attrs['user_id'] = $user->id;
+
+        return self::issue($planSlug, $attrs);
+    }
+
+    /** Issue a default Free license for a user (per_user mode provisioning). */
+    public static function defaultLicenseForUser(User $user): ?License
+    {
+        $freePlan = Plan::where('slug', 'free')->first();
+        if (! $freePlan) {
+            return null;
+        }
+
+        // ponytail: don't duplicate — use firstOrCreate on user_id + plan_slug + active
+        // Key includes user_id via sign() for uniqueness — consistent key format
+        return License::firstOrCreate(
+            ['user_id' => $user->id, 'plan_slug' => 'free', 'status' => 'active'],
+            [
+                'license_key' => self::sign('free', null, $user->id),
+                'type' => 'manual',
+                'status' => 'active',
+                'expires_at' => null,
+                'issued_to' => null,
+                'snapshot' => ['limits' => $freePlan->limits, 'features' => $freePlan->features],
+            ]
+        );
+    }
+
+    /** Status of the current license (or 'none'). Accepts optional User for per_user mode. */
+    public static function status(?User $user = null): string
+    {
+        $license = self::resolveActiveLicense($user);
         if (! $license) {
             return 'none';
         }
@@ -122,15 +175,35 @@ final class LicenseService
         return 'active';
     }
 
-    /** Days left on the activated license (null = lifetime/INF). */
-    public static function daysLeft(): ?int
+    /** Days left on the current license (null = lifetime/INF). Accepts optional User for per_user mode. */
+    public static function daysLeft(?User $user = null): ?int
     {
-        $license = self::activeLicense();
+        $license = self::resolveActiveLicense($user);
         if (! $license || ! $license->expires_at) {
             return null;
         }
 
-        return (int) now()->diffInDays($license->expires_at, false);
+        // Signed diff: positive if future, negative if expired.
+        return (int) now()->startOfDay()->diffInDays($license->expires_at->startOfDay());
+    }
+
+    /** Resolve the current license for status/display — global or per-user.
+     *  Unlike PlanService, this returns the most recent license regardless
+     *  of expiration, so the dashboard can show 'expired' status.
+     */
+    private static function resolveActiveLicense(?User $user = null): ?License
+    {
+        $mode = Setting::get('license_mode', 'global');
+
+        // Per-user mode: return the user's most recent license (regardless of expiry)
+        if ($mode === 'per_user' && $user) {
+            return $user->licenses()
+                ->orderBy('id', 'desc')
+                ->first();
+        }
+
+        // Global mode: check the instance-level activated license
+        return self::activeLicense();
     }
 
     /**
@@ -138,7 +211,7 @@ final class LicenseService
      * Reads the key from settings once; used by status(), daysLeft(),
      * and DashboardController to avoid duplicate settings+license queries.
      */
-    private static function activeLicense(): ?License
+    public static function activeLicense(): ?License
     {
         $key = Setting::get('license_key');
         if (! $key) {

@@ -289,18 +289,6 @@ parameters:
 			path: app/Models/User.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\User\:\:\$license\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Services/PlanService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>plan_slug" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Services/PlanService.php
-
-		-
 			message: '#^Access to constant ATTR_SSL_CA on an unknown class Pdo\\Mysql\.$#'
 			identifier: class.notFound
 			count: 2

@@ -253,17 +253,22 @@ it('no direct user permission records created during any scenario', function () 
     expect($direct)->toBe(0);
 });
 
-it('Scenario B — superadmin bypasses Plan boundary (positive control)', function () {
-    // Free plan: allowed_permissions is [] → plan denies everything
-    $sa = User::where('email', 'admin@laravel-base.local')->first();
-    $this->actingAs($sa);
+it('Scenario B — per_user mode: user license Plan overrides global', function () {
+    // Set to per_user mode
+    Setting::set('license_mode', 'per_user');
+    cache()->flush();
 
-    // Superadmin has the super-admin role → isSuperAdmin() = true
-    expect($sa->isSuperAdmin())->toBeTrue();
+    // Normal user with Free license (default)
+    $user = makeBoundedUser(['user.view', 'role.create'], 'bounded');
+    $this->actingAs($user);
 
-    // Plan denies user.view (free plan, empty allowed_permissions)
-    expect(PlanService::for($sa)->allows('user.view'))->toBeFalse();
+    // Global plan is enterprise (from beforeEach), but per_user should use user's license
+    expect(PlanService::for(null, $user)->plan()->slug)->toBe('free');
 
-    // But superadmin bypasses Plan boundary → role permission is sufficient
-    expect($sa->can('user.view'))->toBeTrue();
+    // Issue a Pro license for this user
+    LicenseService::issueFor($user, 'pro', ['type' => 'manual', 'expires_at' => null]);
+
+    cache()->flush();
+    expect(PlanService::for(null, $user)->plan()->slug)->toBe('pro')
+        ->and(PlanService::for(null, $user)->can('api-tokens'))->toBeTrue(); // pro has api-tokens feature
 });
