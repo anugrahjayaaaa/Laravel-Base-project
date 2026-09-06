@@ -152,7 +152,11 @@ PlanService::for()
 | `status(?User $user)` | Current license status string. |
 | `daysLeft(?User $user)` | Days until expiration (null = lifetime). |
 
-**License key format**: `LIC-{PLAN}-{hash}` where `hash = sha1("{plan}|{expires|lifetime}{|u{userId}}.{secret}")`. User-specific keys include `|u{userId}` in the payload — consistent between `sign()` and `verify()`.
+**License key format**: `LIC-{PLAN}-{hash}` where hash is derived from
+`slug|expires_at|u{userId}` for per-user licenses. Global licenses omit the
+`|u{userId}` segment — backward compatible with the old key format.
+`LicenseService::verify()` uses the same derivation, including `user_id` when
+checking per-user licenses.
 
 ### UserService
 

@@ -14,12 +14,12 @@ Uses `spatie/laravel-permission`. Roles & permissions are created/edited via UI 
 - **Super-admin role**: `super-admin` — platform-level role seeded with ALL permissions via
   `syncPermissions(Permission::all())`. This is NOT a code bypass — it is a Role with full
   permissions. **Platform-level Plan Entitlement Override**: super-admin role assignment
-  signals a platform operator (not a commercial subscriber). `BypassService::isSuperAdmin()`
-  (role-based check) is consulted by the runtime authorization layer: super-admin **bypasses
-  Plan feature entitlement AND Plan permission entitlement**. The default Free Plan
-  applies to all normal users but NOT to super-admin. **Pennant remains intact**: a
-  deactivated feature still 404s for super-admin (global kill switch wins). `role.*` /
-  `permission.*` permissions are exempt from Plan boundary (managed via Role, not Plan tier).
+  signals a platform operator (not a commercial subscriber). `User::isSuperAdmin()`
+  (role-based check) is consulted by the runtime authorization layer in
+  `App\Providers\AppServiceProvider::register()`. When true, the runtime authorization
+  layer **bypasses Plan permission AND Plan feature entitlement**.
+  This applies only to the Plan boundary — Pennant is checked separately and STILL
+  applies (Pennant OFF → 404 even for super-admin).
 - Role & Permission are **custom models** (`App\Models\Role`, `App\Models\Permission`)
   extending spatie with `SoftDeletes`; `config/permission.php` points spatie to them.
   Always import the custom models, never `Spatie\Permission\Models\*` directly.
@@ -53,8 +53,9 @@ Uses `spatie/laravel-permission`. Roles & permissions are created/edited via UI 
 - Every role/permission change → audit trail.
 - **Effective permission** = Role grants permission AND Plan allows permission (see `docs/base/features/licensing-and-billing.md` §11). Plan alone never grants; Role alone never bypasses Plan.
 - **Super-admin bypass**: `User::isSuperAdmin()` (true when the user holds the `super-admin`
-  Role — NOT username-based) is checked by `BypassService`. When true, the runtime
-  authorization layer **bypasses Plan permission AND Plan feature entitlement**.
+  Role — NOT username-based) is checked by the runtime authorization layer in
+  `App\Providers\AppServiceProvider::register()`. When true, the runtime authorization
+  layer **bypasses Plan permission AND Plan feature entitlement**.
   This applies only to the Plan boundary — Pennant is checked separately and STILL
   applies (Pennant OFF → 404 even for super-admin).
 - **Management permissions** (`role.*`, `permission.*`) are exempt from the Plan

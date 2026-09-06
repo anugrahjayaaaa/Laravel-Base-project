@@ -15,17 +15,25 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
+        $license = match (Setting::get('license_mode', 'global')) {
+            'per_user' => $user->license()->first(),
+            default => LicenseService::activeLicense(),
+        };
+
+        $licenseStatus = LicenseService::status($user);
+        $licenseDaysLeft = LicenseService::daysLeft($user);
+
         return view('dashboard', [
             'title' => 'Dashboard',
             'userCount' => User::count(),
             'roleCount' => Role::count(),
             'auditCount' => Activity::count(),
-            'licenseStatus' => LicenseService::status($user),
-            'licenseDaysLeft' => LicenseService::daysLeft($user),
-            'activePlan' => LicenseService::status($user) === 'none'
+            'licenseStatus' => $licenseStatus,
+            'licenseDaysLeft' => $licenseDaysLeft,
+            'activePlan' => $licenseStatus === 'none'
                 ? Setting::get('active_plan', 'free')
                 : PlanService::for($user)->plan()->slug,
-            'license' => $user->license,
+            'license' => $license,
             'user' => $user,
         ]);
     }
