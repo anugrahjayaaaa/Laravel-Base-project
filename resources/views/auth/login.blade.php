@@ -68,7 +68,7 @@
             const show = pwd.type === 'password';
             pwd.type = show ? 'text' : 'password';
             icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
-            btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+            btn.setAttribute('aria-label', show ? __('ui.hide_password') : __('ui.show_password'));
         });
     })();
 </script>

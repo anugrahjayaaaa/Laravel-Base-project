@@ -117,6 +117,7 @@ return [
     'current_password' => 'Current Password',
     'new_password_hint' => 'New Password (min 12, upper/lower/digit/symbol)',
     'show_password' => 'Show password',
+    'hide_password' => 'Hide password',
     'update_profile' => 'Update Profile',
     'email_verified' => 'Email verified',
     'email_not_verified' => 'Email not verified',

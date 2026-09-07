@@ -25,6 +25,17 @@ it('rejects bad credentials', function () {
     ])->assertStatus(422);
 });
 
+it('rejects login for locked account', function () {
+    $u = User::where('email', 'admin@laravel-base.local')->first();
+    $u->update(['locked_until' => now()->addDay(), 'locked_permanently' => false]);
+
+    $this->postJson('/api/v1/login', [
+        'identifier' => $u->username,
+        'password' => '#Password123',
+        'device_name' => 'x',
+    ])->assertStatus(422);
+});
+
 it('requires auth for me', function () {
     $this->getJson('/api/v1/me')->assertUnauthorized();
 });

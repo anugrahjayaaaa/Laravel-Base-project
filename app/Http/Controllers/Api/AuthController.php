@@ -43,8 +43,9 @@ class AuthController extends Controller
 
         $user = User::where($field, $identifier)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (! $user || $user->isLocked() || ! Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 900);
+
             throw ValidationException::withMessages(['identifier' => __('messages.invalid_credentials')]);
         }
 

@@ -117,6 +117,7 @@ return [
     'current_password' => 'Kata Sandi Saat Ini',
     'new_password_hint' => 'Kata Sandi Baru (min. 12 huruf, campur huruf besar/kecil, angka, simbol)',
     'show_password' => 'Tampilkan kata sandi',
+    'hide_password' => 'Sembunyikan kata sandi',
     'update_profile' => 'Perbarui Profil',
     'email_verified' => 'Email terverifikasi',
     'email_not_verified' => 'Email belum terverifikasi',
