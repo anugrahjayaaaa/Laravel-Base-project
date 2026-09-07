@@ -50,6 +50,16 @@ class UserController extends Controller
         $plain = $request->validated()['password'];
         $user = $this->users->create($request->validated());
 
+        activity()->causedBy($request->user())
+            ->performedOn($user)
+            ->withProperties([
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'username' => $user->username,
+                'email' => $user->email,
+            ])
+            ->log('user_created');
+
         if ($user) {
             $user->sendEmailVerificationNotification();
             $user->notify(new AdminUserCreated(

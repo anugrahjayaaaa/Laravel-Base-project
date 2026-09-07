@@ -9,16 +9,8 @@ class UserObserver
 {
     public function created($user)
     {
-        $payload = [
-            'ip' => Request::ip(),
-            'user_agent' => Request::userAgent(),
-        ];
-
-        if (auth()->check()) {
-            activity()->causedBy(auth()->user())->withProperties($payload)->performedOn($user)->log('user_created');
-        } else {
-            activity()->performedOn($user)->withProperties($payload)->log('user_created');
-        }
+        // ponytail: audit moved to controller for request-scoped metadata;
+        // retained here only as fallback for non-HTTP creation paths.
     }
 
     public function updated($user)
