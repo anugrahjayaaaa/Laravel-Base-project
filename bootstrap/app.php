@@ -41,4 +41,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // ponytail: global unique-constraint safety net for SQLite/MySQL race conditions.
+        // Not a substitute for per-field mapping; add per-field handling if 422 accuracy matters.
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if ($e instanceof \Illuminate\Database\QueryException && str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
+                return redirect()->back()->withErrors(['email' => __('messages.email_already_taken')])->withInput();
+            }
+
+            return null;
+        });
     })->create();

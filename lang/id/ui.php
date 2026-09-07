@@ -89,6 +89,7 @@ return [
     'confirm_unlock_body' => 'Buka kunci pengguna ini? Mereka akan bisa masuk lagi.',
     'send_reset_email' => 'Kirim reset kata sandi',
     'send_reset_email_label' => 'Kirim reset kata sandi:',
+    'restore' => 'Pulihkan',
 
     // ── roles ──
     'roles' => 'Peran',

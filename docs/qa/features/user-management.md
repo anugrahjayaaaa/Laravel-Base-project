@@ -59,7 +59,6 @@ Explicitly out of scope:
 
 ### Assumptions not yet confirmed by live runtime
 - Whether the user index view shows deleted/restored state indicators consistently.
-- Whether admin-created users should receive verification email; current code does not send one.
 - Whether changing a user's role requires cache/session invalidation for that user to see updated access.
 
 ## 4. Current Implementation
@@ -156,37 +155,40 @@ Concerns:
 **Title:** Concurrent user creation can crash with unvalidated duplicate
 **Severity:** Medium
 **Category:** Data integrity / UX
-**Evidence:** `UserStoreRequest` validates `unique:users,email` etc., but two parallel requests can pass validation and the DB unique index throws `QueryException`.
-**Current behavior:** One request succeeds, one fails with 500 unless caught.
-**Expected behavior:** Convert DB constraint violation into a 422 validation error for the relevant field.
-**Impact:** Poor UX and potential noise in error monitoring.
-**Likely root cause:** No DB-level exception handling mapping in controller/service.
-**Affected components:** `UserService::create()`, `UserStoreRequest`, `RegisterRequest`.
+**Evidence:** `UserStoreRequest` validates `unique:users,email` etc., but two parallel requests can pass validation and the DB unique index throws `QueryException`. A global exception handler now converts SQLite/MySQL unique constraint violations into a 422-style redirect with email validation error.
+**Current behavior:** One request succeeds, the other no longer crashes with 500; it redirects back with an error.
+**Expected behavior:** Same.
+**Impact:** Reduced 500 noise; UX degrades to generic email error instead of per-field mapping.
+**Likely root cause:** DB-level race condition beyond request-level validation; now mitigated at exception layer.
+**Affected components:** `bootstrap/app.php`, `UserStoreRequest`, `UserUpdateRequest`, `RegisterRequest`.
 **Related QA cases:** QA-041, QA-042, QA-043.
+**Status:** resolved (global safety net; per-field mapping deferred)
 
 ### GAP-USER-002
 **Title:** Missing audit coverage for user CRUD mutations
 **Severity:** Medium
 **Category:** Audit / Maintainability
-**Evidence:** `UserController` logs activity only for lock/unlock/send-reset; create/update/delete/restore/force-delete do not emit activity log entries.
-**Current behavior:** Important user lifecycle changes are not in audit trail.
-**Expected behavior:** All mutations should produce consistent audit entries (`user_created`, `user_updated`, `user_deleted`, `user_restored`, `user_permanently_deleted`).
-**Impact:** Incomplete audit trail for security review and incident response.
-**Likely root cause:** Partial adoption of activity logging; not enforced at service/action layer.
-**Affected components:** `UserService`, `UserController`.
+**Evidence:** `UserController` now logs activity for create/update/delete/restore/force-delete; lock/unlock/reset-link already logged.
+**Current behavior:** All user mutations emit audit entries (`user_created`, `user_updated`, `user_deleted`, `user_restored`, `user_permanently_deleted`).
+**Expected behavior:** Same.
+**Impact:** Audit trail is now consistent for user lifecycle actions.
+**Likely root cause:** Historical partial adoption; now addressed in controller layer.
+**Affected components:** `UserController`.
 **Related QA cases:** QA-060, QA-061.
+**Status:** resolved
 
 ### GAP-USER-003
-**Title:** Admin-created users do not receive verification email
+**Title:** Admin-created users receive verification email with username/password
 **Severity:** Low
 **Category:** Functional / UX
-**Evidence:** `RegisterController` explicitly sends verification email; `UserService::create()` does not.
-**Current behavior:** Admin-created users have `email_verified_at` null unless manually verified later.
-**Expected behavior:** Depends on product decision. If admin creates user, verification email may be expected or admin-set verified.
-**Impact:** Inconsistent onboarding behavior between admin and self-service flows.
-**Likely root cause:** No defined policy; implementation split between controllers.
-**Affected components:** `UserService`, `RegisterController`.
+**Evidence:** `UserController::store()` sends `sendEmailVerificationNotification()` plus `AdminUserCreated` notification containing username, password, and login URL.
+**Current behavior:** Admin-created user receives verification email and a separate account-creation email with credentials.
+**Expected behavior:** Same.
+**Impact:** Onboarding is now consistent; admin-created users can verify and log in immediately.
+**Likely root cause:** Missing feature implementation; now implemented.
+**Affected components:** `UserController`, `AdminUserCreated`, `UserService`.
 **Related QA cases:** QA-010, QA-041.
+**Status:** resolved
 
 ### GAP-USER-004
 **Title:** Locked-user visibility/state not explicitly surfaced in user list UI

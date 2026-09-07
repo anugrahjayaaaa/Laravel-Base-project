@@ -80,6 +80,7 @@ return [
     'email_not_verified' => 'Silakan verifikasi email Anda sebelum masuk. Periksa kotak masuk untuk tautan verifikasi.',
     'reset_link_sent_simple' => 'Tautan reset kata sandi sudah kami kirim.',
     'token_created' => 'Token dibuat. Simpan sekarang — tidak akan ditampilkan lagi.',
+    'email_already_taken' => 'Email sudah digunakan.',
 
     // ── bulk delete counts ──
     'users_deleted_count' => ':count user dipindah ke tempat sampah.',

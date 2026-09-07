@@ -89,6 +89,7 @@ return [
     'confirm_unlock_body' => 'Unlock this user? They will be able to log in again.',
     'send_reset_email' => 'Send reset password',
     'send_reset_email_label' => 'Send reset password:',
+    'restore' => 'Restore',
 
     // ── roles ──
     'roles' => 'Roles',

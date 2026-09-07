@@ -80,20 +80,30 @@
                 <div class="col-md-6">
                     <label class="form-label">{{ ui('password') }}{{ isset($user) ? ' ' . ui('leave_blank_to_keep') : '' }}</label>
                     <div class="input-group">
-                        <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" {{ isset($user) ? '' : 'required' }} aria-describedby="password-error" @error('password') aria-invalid="true" @enderror>
+                        <input type="text" name="password" id="password" class="form-control @error('password') is-invalid @enderror" {{ isset($user) ? '' : 'required' }} aria-describedby="password-error" @error('password') aria-invalid="true" @enderror value="{{ isset($user) ? old('password', '') : '' }}">
                         <button type="button" class="btn btn-outline-secondary" id="toggle-password" aria-label="{{ ui('show_password') }}">
                             <i class="bi bi-eye" id="password-icon"></i>
                         </button>
+                        @unless(isset($user))
+                        <button type="button" class="btn btn-outline-secondary" id="generate-password" aria-label="{{ ui('generate_password') ?? 'Generate password' }}">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        @endunless
                     </div>
                     @error('password')<div id="password-error" class="invalid-feedback d-block w-100 mt-1" role="alert" aria-live="polite">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">{{ ui('confirm_password') }}</label>
                     <div class="input-group">
-                        <input type="password" name="password_confirmation" id="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror" aria-describedby="password_confirmation-error" @error('password_confirmation') aria-invalid="true" @enderror>
+                        <input type="text" name="password_confirmation" id="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror" aria-describedby="password_confirmation-error" @error('password_confirmation') aria-invalid="true" @enderror value="{{ isset($user) ? old('password_confirmation', '') : '' }}">
                         <button type="button" class="btn btn-outline-secondary" id="toggle-password-confirm" aria-label="{{ ui('show_password') }}">
                             <i class="bi bi-eye" id="password-confirm-icon"></i>
                         </button>
+                        @unless(isset($user))
+                        <button type="button" class="btn btn-outline-secondary" id="copy-password" aria-label="Copy password">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                        @endunless
                     </div>
                     @error('password_confirmation')<div id="password_confirmation-error" class="invalid-feedback d-block w-100 mt-1" role="alert" aria-live="polite">{{ $message }}</div>@enderror
                 </div>
@@ -138,6 +148,30 @@
                     i.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
                 });
             }
+        }
+
+        const generateBtn = document.getElementById('generate-password');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', function () {
+                const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+';
+                let out = '';
+                const values = crypto.getRandomValues(new Uint8Array(24));
+                for (const v of values) out += charset[v % charset.length];
+                document.getElementById('password').value = out;
+                document.getElementById('password_confirmation').value = out;
+            });
+        }
+
+        const copyBtn = document.getElementById('copy-password');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async function () {
+                const val = document.getElementById('password').value;
+                if (!val) return;
+                await navigator.clipboard.writeText(val);
+                const original = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="bi bi-check"></i>';
+                setTimeout(() => copyBtn.innerHTML = original, 1200);
+            });
         }
     })();
 </script>

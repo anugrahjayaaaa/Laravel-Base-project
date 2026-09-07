@@ -80,6 +80,7 @@ return [
     'email_not_verified' => 'Please verify your email before logging in. Check your inbox for the verification link.',
     'reset_link_sent_simple' => 'Reset link sent.',
     'token_created' => 'Token created. Store it now — it won\'t be shown again.',
+    'email_already_taken' => 'Email already taken.',
 
     // ── bulk delete counts ──
     'users_deleted_count' => ':count user(s) moved to trash.',

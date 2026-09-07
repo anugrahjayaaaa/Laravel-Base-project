@@ -42,7 +42,7 @@
                         <div class="d-flex align-items-center gap-2">
                             <span class="avatar avatar-sm rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:32px;height:32px">{{ strtoupper(substr($user->name,0,1)) }}</span>
                             <div>
-                                <div class="fw-medium">{{ $user->name }}</div>
+                                <span class="fw-medium">{{ $user->name }}</span>
                                 @if($user->trashed())<span class="badge text-bg-danger">{{ ui('deleted') }}</span>@endif
                             </div>
                         </div>

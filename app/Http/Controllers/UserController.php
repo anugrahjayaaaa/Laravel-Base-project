@@ -8,6 +8,7 @@ use App\Http\Requests\User\UserStoreRequest;
 use App\Http\Requests\User\UserUpdateRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\AdminUserCreated;
 use App\Services\BulkDeleteService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -46,7 +47,16 @@ class UserController extends Controller
 
     public function store(UserStoreRequest $request): RedirectResponse
     {
-        $this->users->create($request->validated());
+        $plain = $request->validated()['password'];
+        $user = $this->users->create($request->validated());
+
+        if ($user) {
+            $user->sendEmailVerificationNotification();
+            $user->notify(new AdminUserCreated(
+                plainPassword: $plain,
+                loginUrl: route('login'),
+            ));
+        }
 
         return redirect()->route('users.index')->with('success', __('messages.user_created'));
     }
@@ -62,6 +72,10 @@ class UserController extends Controller
     public function update(UserUpdateRequest $request, User $user): RedirectResponse
     {
         $this->users->update($user, $request->validated());
+
+        activity()->causedBy(auth()->user())
+            ->performedOn($user)
+            ->log('user_updated');
 
         return redirect()->route('users.index')->with('success', __('messages.user_updated'));
     }
@@ -140,6 +154,11 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return redirect()->route('users.index')->with('error', __('messages.cannot_delete_self'));
         }
+
+        activity()->causedBy(auth()->user())
+            ->performedOn($user)
+            ->log('user_deleted');
+
         $user->delete();
 
         return redirect()->route('users.index')->with('success', __('messages.user_deleted'));
@@ -147,7 +166,13 @@ class UserController extends Controller
 
     public function restore(int $id): RedirectResponse
     {
-        User::withTrashed()->findOrFail($id)->restore();
+        $user = User::withTrashed()->findOrFail($id);
+
+        activity()->causedBy(auth()->user())
+            ->performedOn($user)
+            ->log('user_restored');
+
+        $user->restore();
 
         return redirect()->route('users.index')->with('success', __('messages.user_restored'));
     }
@@ -157,7 +182,14 @@ class UserController extends Controller
         if ($id === auth()->id()) {
             return redirect()->route('users.index')->with('error', __('messages.cannot_delete_self_permanently'));
         }
-        User::withTrashed()->findOrFail($id)->forceDelete();
+
+        $user = User::withTrashed()->findOrFail($id);
+
+        activity()->causedBy(auth()->user())
+            ->performedOn($user)
+            ->log('user_force_deleted');
+
+        $user->forceDelete();
 
         return redirect()->route('users.index')->with('success', __('messages.user_permanently_deleted'));
     }

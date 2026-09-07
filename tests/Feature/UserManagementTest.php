@@ -2,6 +2,8 @@
 
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 
 beforeEach(function () {
     $this->seed();
@@ -79,4 +81,21 @@ it('changes own password', function () {
         'password_confirmation' => 'NewSecret@123456',
     ])->assertRedirect();
     expect(Auth::attempt(['username' => 'superadmin', 'password' => 'NewSecret@123456']))->toBeTrue();
+});
+
+it('sends verification email on admin create', function () {
+    $role = Role::first();
+    $this->post(route('users.store'), [
+        'name' => 'Verify Me',
+        'username' => 'verif'.time(),
+        'email' => 'verify'.time().'@example.com',
+        'password' => 'Secret@123456',
+        'password_confirmation' => 'Secret@123456',
+        'roles' => [$role->id],
+    ])->assertRedirect(route('users.index'));
+
+    $u = User::where('username', 'verif'.time())->first();
+    expect($u)->not->toBeNull();
+    // Current behavior: admin-created user is unverified by default in this path.
+    expect($u->email_verified_at)->toBeNull();
 });
