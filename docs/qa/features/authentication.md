@@ -218,7 +218,7 @@ Concerns:
 **Likely root cause:** Implementation focused on backend enforcement; login view has no locked-state branch.
 **Affected components:** `LoginController`, `auth.login`, translation keys.
 **Related QA cases:** QA-005, QA-006, QA-049, QA-050, QA-104.
-**Dependencies:** None.
+**Dependencies:** Phase 1 core behavior already fixed; UI enhancement remains.
 
 ### GAP-AUTH-004
 **Title:** Hardcoded English in password toggle aria-label

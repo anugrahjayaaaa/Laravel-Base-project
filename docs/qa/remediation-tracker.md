@@ -20,4 +20,13 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 | 14 | API Hardening | `pending` | — |
 | 15 | Cross-Feature Regression | `pending` | — |
 
-Rule: do not start Phase N+1 until Phase N is verified stable.
+Phase 1 includes: login-time lock enforcement, API lock enforcement, login toggle i18n, locked-user modal before redirect to login.
+Phase 2 includes: admin-create random password in form + email, verification email handling, username/email uniqueness behavior, delete/restore auth behavior.
+Phase 3 includes: permission add/remove sync to role, role change access, sidebar permission mismatch.
+Phase 4 includes: feature page label `ui.feature_group_settings` review.
+Phase 5 includes: session invalidation on admin-lock for already-logged-in user, session list permission gating, header user-dropdown session link visibility, logout-others password UX alignment, same-credential login on new device/incognito must logout previous session.
+Phase 8 includes: audit coverage review across all mutation features.
+Phase 9 includes: notification behavior review + gap analysis.
+Phase 10 includes: log search bar implementation.
+Phase 11 includes: `$title` architecture + translation add button.
+Phase 12 includes: restore icon `ui.restore`, soft-delete messaging consistency, shared UI components.
