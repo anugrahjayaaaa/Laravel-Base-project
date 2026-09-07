@@ -9,9 +9,16 @@ class UserObserver
 {
     public function created($user)
     {
-        activity()->causedBy($user)->withProperties([
-            'ip' => Request::ip(), 'user_agent' => Request::userAgent(),
-        ])->performedOn($user)->log('user_created');
+        $payload = [
+            'ip' => Request::ip(),
+            'user_agent' => Request::userAgent(),
+        ];
+
+        if (auth()->check()) {
+            activity()->causedBy(auth()->user())->withProperties($payload)->performedOn($user)->log('user_created');
+        } else {
+            activity()->performedOn($user)->withProperties($payload)->log('user_created');
+        }
     }
 
     public function updated($user)

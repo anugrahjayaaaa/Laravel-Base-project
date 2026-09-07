@@ -72,6 +72,10 @@ class LoginController extends Controller
             // On the 5th failed attempt, lock the account for 15 minutes (DB-persisted)
             if (RateLimiter::attempts($userKey) >= 5 && $user) {
                 $user->update(['locked_until' => now()->addMinutes(15)]);
+
+                activity()->withProperties([
+                    'ip' => $request->ip(), 'user_agent' => $request->userAgent(),
+                ])->performedOn($user)->log('account_locked_auto');
             }
 
             throw ValidationException::withMessages([
