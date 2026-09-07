@@ -63,6 +63,12 @@ class AuthApiController extends AuthController
         );
 
         if ($status === Password::PASSWORD_RESET) {
+            activity()->withProperties([
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'email' => $request->email,
+            ])->log('password_reset');
+
             return response()->json(['message' => __($status)]);
         }
 
@@ -96,6 +102,11 @@ class AuthApiController extends AuthController
 
         $user->markEmailAsVerified();
 
+        activity()->causedBy($user)->withProperties([
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ])->performedOn($user)->log('email_verified');
+
         return response()->json(['message' => __('messages.email_verified')]);
     }
 
@@ -113,7 +124,13 @@ class AuthApiController extends AuthController
         if ($user->hasVerifiedEmail()) {
             return response()->json(['message' => __('messages.email_already_verified')], 400);
         }
+
         $user->sendEmailVerificationNotification();
+
+        activity()->causedBy($user)->withProperties([
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ])->performedOn($user)->log('verification_resent');
 
         return response()->json(['message' => __('messages.verification_link_sent')]);
     }
