@@ -6,7 +6,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 |---|---|---|---|
 | 1 | Authentication Core | `complete` | `docs/qa/phase-reports/phase-01-authentication.md` |
 | 2 | User Lifecycle / User CRUD | `complete` | `docs/qa/phase-reports/phase-02-user-lifecycle.md` |
-| 3 | RBAC / Roles / Permissions | `pending` | — |
+| 3 | RBAC / Roles / Permissions | `complete` | `docs/qa/phase-reports/phase-03-rbac.md` |
 | 4 | Feature Flags + Navigation | `pending` | — |
 | 5 | Sessions | `pending` | — |
 | 6 | Profile + Password + Verification | `pending` | — |
