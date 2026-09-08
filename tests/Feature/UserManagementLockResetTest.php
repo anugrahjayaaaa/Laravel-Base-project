@@ -88,6 +88,8 @@ it('permanently locks an account (user.lock permission, self excluded)', functio
     expect($locked->locked_permanently)->toBeTrue(); // flag, not a sentinel date
     expect(Activity::where('subject_id', $u->id)
         ->where('description', 'user_locked')->exists())->toBeTrue();
+    expect(Activity::where('subject_id', $u->id)
+        ->where('description', 'session_invalidated')->exists())->toBeTrue();
 
     // Unlock clears the permanent flag.
     $this->post(route('users.unlock', $u))->assertRedirect(route('users.index'));
