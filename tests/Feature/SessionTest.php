@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Activity;
 
 uses(RefreshDatabase::class);
 
@@ -48,6 +49,9 @@ it('logs out other sessions without password', function () {
     // current session row (if present) survives because it is filtered by '<>' id
     $countAfter = DB::table('sessions')->where('user_id', $u->id)->count();
     expect($countAfter)->toBeLessThanOrEqual($countBefore);
+
+    expect(Activity::where('subject_id', $u->id)
+        ->where('description', 'session_logout_others')->exists())->toBeTrue();
 });
 
 it('regenerates device session with valid password (Auth facade regression)', function () {
