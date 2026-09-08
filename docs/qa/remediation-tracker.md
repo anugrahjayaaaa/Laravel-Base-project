@@ -5,7 +5,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 | Phase | Feature | Status | Report |
 |---|---|---|---|
 | 1 | Authentication Core | `complete` | `docs/qa/phase-reports/phase-01-authentication.md` |
-| 2 | User Lifecycle / User CRUD | `pending` | — |
+| 2 | User Lifecycle / User CRUD | `complete` | `docs/qa/phase-reports/phase-02-user-lifecycle.md` |
 | 3 | RBAC / Roles / Permissions | `pending` | — |
 | 4 | Feature Flags + Navigation | `pending` | — |
 | 5 | Sessions | `pending` | — |
@@ -26,7 +26,7 @@ Phase 3 includes: permission add/remove sync to role, role change access, sideba
 Phase 4 includes: feature page label `ui.feature_group_settings` review.
 Phase 5 includes: session invalidation on admin-lock for already-logged-in user, session list permission gating, header user-dropdown session link visibility, logout-others password UX alignment, same-credential login on new device/incognito must logout previous session, session logout audit log.
 Phase 7 includes: registration settings, system settings update, feature toggle audit log.
-Phase 8 includes: audit coverage review across all mutation features, audit-log DRY review (repeated `activity()->causedBy()->withProperties()->performedOn()->log()` across controllers/observers — evaluate helper/trait vs current inline pattern).
+Phase 8 includes: audit coverage review across all mutation features, audit-log DRY review (repeated `activity()->causedBy()->withProperties()->performedOn()->log()` across controllers/observers — evaluate helper/trait vs current inline pattern), move audit logs out of services/observers into controllers where HTTP request context exists (e.g. `LicenseService::activate/revoke`, `UserObserver::created`).
 Phase 9 includes: notification behavior review + gap analysis, notification mark-all-read audit log.
 Phase 10 includes: log search bar implementation.
 Phase 11 includes: `$title` architecture + translation add button.

@@ -20,6 +20,7 @@ One app: web (session) + mobile (Sanctum token).
 - Request sends `Authorization: Bearer`.
 - Logout → `token->delete()`. Change password → revoke all tokens.
 - Mobile failed login follows lockout + audit (same as web).
+- Mobile login also rejects permanently/temporarily locked accounts before password check.
 
 ## Core v1 endpoints
 - `POST /api/v1/login` (username|email + password)
