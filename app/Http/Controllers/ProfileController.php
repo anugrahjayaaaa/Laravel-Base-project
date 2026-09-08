@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Requests\Profile\PasswordChangeRequest;
 use App\Http\Requests\Profile\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
@@ -10,6 +11,7 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    use Auditable;
     public function show(): View
     {
         return view('profile.show', ['user' => auth()->user()]);
@@ -19,6 +21,8 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
         $user->update($request->validated());
+
+        $this->audit($user, 'profile_updated', $user);
 
         return redirect()->route('profile.show')->with('success', __('messages.profile_updated'));
     }
@@ -32,6 +36,8 @@ class ProfileController extends Controller
             $user->tokens()->delete();
         }
         auth()->logoutOtherDevices($request->validated()['password']);
+
+        $this->audit($user, 'password_changed', $user);
 
         return redirect()->route('profile.show')->with('success', __('messages.password_changed'));
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Requests\Profile\PasswordChangeRequest;
 use App\Http\Requests\Profile\ProfileUpdateRequest;
 use App\Http\Resources\UserResource;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Hash;
  */
 class ProfileApiController extends Controller
 {
+    use Auditable;
     /** Show own profile. */
     public function show(Request $request): JsonResponse
     {
@@ -28,9 +30,12 @@ class ProfileApiController extends Controller
      */
     public function update(ProfileUpdateRequest $request): JsonResponse
     {
-        $request->user()->update($request->validated());
+        $user = $request->user();
+        $user->update($request->validated());
 
-        return response()->json(new UserResource($request->user()->load('roles')));
+        $this->audit($user, 'profile_updated', $user);
+
+        return response()->json(new UserResource($user->load('roles')));
     }
 
     /** Change own password (revokes all tokens + other devices). */
@@ -40,6 +45,8 @@ class ProfileApiController extends Controller
         $request->user()->update(['password' => Hash::make($request->validated()['password'])]);
         $user->tokens()->delete();
         auth()->logoutOtherDevices($request->validated()['password']);
+
+        $this->audit($user, 'password_changed', $user);
 
         return response()->json(['message' => __('messages.password_changed')]);
     }
