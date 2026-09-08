@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Requests\Session\LogoutOthersRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,8 @@ use Illuminate\View\View;
 
 class SessionController extends Controller
 {
+    use Auditable;
+
     public function index(): View
     {
         // ponytail: session driver=database -> list from sessions table for current user
@@ -32,6 +35,8 @@ class SessionController extends Controller
         if ($request->filled('password')) {
             Auth::logoutOtherDevices($request->password);
         }
+
+        $this->audit(auth()->user(), 'session_logout_others', auth()->user());
 
         return redirect()->route('sessions.index')->with('success', __('messages.sessions_logged_out'));
     }

@@ -79,7 +79,9 @@
                     </li>
                     <li><hr class="dropdown-divider my-0"></li>
                     <li><a href="{{ route('profile.show') }}" class="dropdown-item py-2"><i class="bi bi-person me-2"></i> {{ ui('profile') }}</a></li>
+                    @can('session.view')
                     <li><a href="{{ route('sessions.index') }}" class="dropdown-item py-2"><i class="bi bi-pc-display me-2"></i> {{ ui('sessions') }}</a></li>
+                    @endcan
                     @can('feature.manage')
                     <li><a href="{{ route('settings.system') }}" class="dropdown-item py-2"><i class="bi bi-gear me-2"></i> {{ ui('system_settings') }}</a></li>
                     @endcan

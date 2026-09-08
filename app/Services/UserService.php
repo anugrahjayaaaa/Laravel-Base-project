@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
 
 /**
  * User lifecycle operations shared by the web and API controllers
@@ -71,6 +72,12 @@ final class UserService
     public function lock(User $user): void
     {
         $user->update(['locked_until' => null, 'locked_permanently' => true]);
+
+        // Invalidate all other active sessions for this user so locked accounts
+        // cannot keep an already-authenticated session alive.
+        DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->delete();
     }
 
     public function unlock(User $user): void
