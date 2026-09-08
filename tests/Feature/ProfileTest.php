@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Activitylog\Models\Activity;
 
 beforeEach(fn () => $this->seed());
 
@@ -16,11 +17,13 @@ it('shows own profile', function () {
 it('updates own name and phone', function () {
     $u = User::where('email', 'admin@laravel-base.local')->first();
     $this->actingAs($u)
-        ->post(route('profile.update'), ['name' => 'New Name', 'phone' => '+62811111111'])
+        ->post(route('profile.update'), ['name' => 'New Name', 'phone' => '+6281234567890'])
         ->assertRedirect(route('profile.show'));
 
     expect($u->fresh()->name)->toBe('New Name');
-    expect($u->fresh()->phone)->toBe('+62811111111');
+    expect($u->fresh()->phone)->toBe('+6281234567890');
+    expect(Activity::where('subject_id', $u->id)
+        ->where('description', 'profile_updated')->exists())->toBeTrue();
 });
 
 it('rejects duplicate phone on own profile', function () {
@@ -45,6 +48,8 @@ it('changes password with correct current password', function () {
         ->assertRedirect(route('profile.show'));
 
     expect(Hash::check('NewPass@12345', $u->fresh()->password))->toBeTrue();
+    expect(Activity::where('subject_id', $u->id)
+        ->where('description', 'password_changed')->exists())->toBeTrue();
 });
 
 it('rejects password change with wrong current password', function () {
