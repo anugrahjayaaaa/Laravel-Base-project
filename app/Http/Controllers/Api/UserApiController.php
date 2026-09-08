@@ -131,6 +131,10 @@ class UserApiController extends Controller
             'target_user_id' => $user->id,
             'target_email' => $user->email,
         ]);
+        $this->audit($user, 'session_invalidated', $request->user(), [
+            'target_user_id' => $user->id,
+            'target_email' => $user->email,
+        ]);
 
         return response()->json(['message' => __('messages.user_locked')]);
     }

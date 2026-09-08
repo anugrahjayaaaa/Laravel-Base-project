@@ -109,6 +109,7 @@ class UserController extends Controller
         $this->users->lock($user);
 
         $this->audit($user, 'user_locked', auth()->user());
+        $this->audit($user, 'session_invalidated', auth()->user());
 
         return redirect()->route('users.index')->with('success', __('messages.user_locked'));
     }

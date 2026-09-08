@@ -44,7 +44,15 @@ status: implemented
 ## User CRUD audit logging
 - User mutations are logged from controller layer via `App\Http\Controllers\Concerns\Auditable`: `user_created`, `user_updated`, `user_deleted`, `user_restored`, `user_permanently_deleted`.
 - Lock, unlock, and admin reset-password are logged separately: `user_locked`, `user_unlocked`, `user_reset_link_sent`.
+- Admin lock additionally emits `session_invalidated` to record that active sessions were cleared by `UserService::lock()`.
 - Auth controllers use the same trait: `LoginController` logs `account_locked_auto`, `email_verified`; `ForgotPasswordController` logs `password_reset_request`.
+
+## Session management
+- Admin lock permanently invalidates all active sessions for the target user (`UserService::lock()` deletes `sessions` rows).
+- Web session routes require `feature:sessions` + `can:session.view` for list and `can:session.revoke` for logout-others.
+- API session routes require `can:session.view` and `can:session.revoke`.
+- Header user dropdown session link is only rendered when `@can('session.view')`.
+- `logoutOthers()` emits `session_logout_others` from controller layer via `Auditable` trait; optional password triggers `Auth::logoutOtherDevices()`.
 
 ## Self-service
 - Profile: name, avatar, phone; change password; view active sessions.
