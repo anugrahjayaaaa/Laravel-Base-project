@@ -44,7 +44,11 @@ Blade: `@feature('users') ... @endfeature` (native Pennant directive).
 
 ## Management UI
 - `/features` lives **under the Settings submenu** (gated by `feature.manage` permission; `staff` + `super-admin` get it).
-- Lists all flags with a **toggle switch** (auto-submits on change) for enable/disable.
+- Lists all flags grouped by `group` from `config/pennant.php`, rendered with
+  `ui('feature_group_'.$group)` in `resources/views/settings/features/index.blade.php`.
+- Group labels live in `lang/{en,id}/ui.php`: `feature_group_access`, `feature_group_monitoring`,
+  `feature_group_system`, `feature_group_billing`, `feature_group_workspace`, `feature_group_other`.
+- Each flag shows a **toggle switch** (auto-confirms via modal) for enable/disable.
 - A `feature.manage` holder can toggle flags (re-enable a disabled module from `/features`), but cannot access a module whose flag is currently OFF — the kill switch applies to everyone.
 
 ## Known flags
