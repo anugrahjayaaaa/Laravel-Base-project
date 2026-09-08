@@ -52,7 +52,7 @@ class AppServiceProvider extends ServiceProvider
                         return null;
                     }
 
-                    if (! PlanService::for($user)->allows($ability)) {
+                    if (! PlanService::for($user)->allows($ability) && Feature::active('plans')) {
                         return false;
                     }
                 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Controllers\Concerns\Sortable;
 use App\Http\Requests\BulkActionRequest;
 use App\Http\Requests\Rbac\PermissionStoreRequest;
@@ -14,7 +15,7 @@ use Illuminate\View\View;
 
 class PermissionController extends Controller
 {
-    use Sortable;
+    use Sortable, Auditable;
 
     public function __construct(private BulkDeleteService $bulk) {}
 
@@ -37,7 +38,9 @@ class PermissionController extends Controller
     {
         $data = $request->validated();
 
-        Permission::create(['name' => $data['name'], 'guard_name' => 'web']);
+        $permission = Permission::create(['name' => $data['name'], 'guard_name' => 'web']);
+
+        $this->audit($permission, 'permission_created', $request->user());
 
         return redirect()->route('permissions.index')->with('success', __('messages.permission_created'));
     }
@@ -52,6 +55,8 @@ class PermissionController extends Controller
         $data = $request->validated();
 
         $permission->update(['name' => $data['name']]);
+
+        $this->audit($permission, 'permission_updated', $request->user());
 
         return redirect()->route('permissions.index')->with('success', __('messages.permission_updated'));
     }
@@ -68,6 +73,8 @@ class PermissionController extends Controller
 
     public function destroy(Permission $permission): RedirectResponse
     {
+        $this->audit($permission, 'permission_deleted', request()->user());
+
         $permission->delete();
 
         return redirect()->route('permissions.index')->with('success', __('messages.permission_deleted'));
@@ -75,14 +82,22 @@ class PermissionController extends Controller
 
     public function restore(int $id): RedirectResponse
     {
-        Permission::withTrashed()->findOrFail($id)->restore();
+        $permission = Permission::withTrashed()->findOrFail($id);
+
+        $this->audit($permission, 'permission_restored', request()->user());
+
+        $permission->restore();
 
         return redirect()->route('permissions.index')->with('success', __('messages.permission_restored'));
     }
 
     public function forceDelete(int $id): RedirectResponse
     {
-        Permission::withTrashed()->findOrFail($id)->forceDelete();
+        $permission = Permission::withTrashed()->findOrFail($id);
+
+        $this->audit($permission, 'permission_permanently_deleted', request()->user());
+
+        $permission->forceDelete();
 
         return redirect()->route('permissions.index')->with('success', __('messages.permission_permanently_deleted'));
     }

@@ -32,11 +32,9 @@ class AuthApiController extends AuthController
         $status = Password::broker('users')->sendResetLink($request->validated());
 
         if ($status === Password::RESET_LINK_SENT) {
-            activity()->withProperties([
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
+            $this->auditAction('password_reset_request', $request->user(), [
                 'email' => $request->email,
-            ])->log('password_reset_request');
+            ]);
 
             return response()->json(['message' => __($status)]);
         }
@@ -63,11 +61,9 @@ class AuthApiController extends AuthController
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            activity()->withProperties([
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
+            $this->auditAction('password_reset', $request->user(), [
                 'email' => $request->email,
-            ])->log('password_reset');
+            ]);
 
             return response()->json(['message' => __($status)]);
         }
@@ -102,10 +98,7 @@ class AuthApiController extends AuthController
 
         $user->markEmailAsVerified();
 
-        activity()->causedBy($user)->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ])->performedOn($user)->log('email_verified');
+        $this->audit($user, 'email_verified', $user);
 
         return response()->json(['message' => __('messages.email_verified')]);
     }
@@ -127,10 +120,7 @@ class AuthApiController extends AuthController
 
         $user->sendEmailVerificationNotification();
 
-        activity()->causedBy($user)->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ])->performedOn($user)->log('verification_resent');
+        $this->audit($user, 'verification_resent', $user);
 
         return response()->json(['message' => __('messages.verification_link_sent')]);
     }

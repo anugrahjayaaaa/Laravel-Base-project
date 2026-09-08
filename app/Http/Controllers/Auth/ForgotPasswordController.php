@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Requests\Auth\PasswordEmailRequest;
 use App\Http\Requests\Auth\PasswordResetRequest;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +14,7 @@ use Illuminate\View\View;
 
 class ForgotPasswordController extends Controller
 {
+    use Auditable;
     /**
      * Show the "forgot password" form.
      *
@@ -47,9 +49,9 @@ class ForgotPasswordController extends Controller
         // project message key (lang/{en,id}/messages.php) so no raw key
         // ever reaches the view — there is a single source of truth.
         if ($status === Password::RESET_LINK_SENT) {
-            activity()
-                ->withProperties(['ip' => $request->ip(), 'user_agent' => $request->userAgent(), 'email' => $request->email])
-                ->log('password_reset_request');
+            $this->auditAction('password_reset_request', $request->user(), [
+                'email' => $request->email,
+            ]);
 
             return back()->with('status', __('messages.reset_link_sent_simple'));
         }

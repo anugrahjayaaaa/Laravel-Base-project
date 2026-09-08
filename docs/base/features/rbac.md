@@ -51,6 +51,11 @@ Uses `spatie/laravel-permission`. Roles & permissions are created/edited via UI 
   not in the controller body. Current modules gate purely by permission; no
   per-resource Policy is registered.
 - Every role/permission change → audit trail.
+- Audit logging is implemented in controllers via `App\Http\Controllers\Concerns\Auditable`:
+  - `RoleController` logs `role_created`, `role_updated`, `role_deleted`, `role_restored`, `role_permanently_deleted`.
+  - `PermissionController` logs `permission_created`, `permission_updated`, `permission_deleted`, `permission_restored`, `permission_permanently_deleted`.
+- Observers (`RoleObserver`, `PermissionObserver`) remain as a non-HTTP fallback only.
+- API controllers mirror web behavior with the same trait.
 - **Effective permission** = Role grants permission AND Plan allows permission (see `docs/base/features/licensing-and-billing.md` §11). Plan alone never grants; Role alone never bypasses Plan.
 - **Super-admin bypass**: `User::isSuperAdmin()` (true when the user holds the `super-admin`
   Role — NOT username-based) is checked by the runtime authorization layer in

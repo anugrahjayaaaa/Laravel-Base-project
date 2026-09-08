@@ -16,6 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
+    use Auditable;
     public function show()
     {
         return view('auth.login');
@@ -73,9 +74,7 @@ class LoginController extends Controller
             if (RateLimiter::attempts($userKey) >= 5 && $user) {
                 $user->update(['locked_until' => now()->addMinutes(15)]);
 
-                activity()->withProperties([
-                    'ip' => $request->ip(), 'user_agent' => $request->userAgent(),
-                ])->performedOn($user)->log('account_locked_auto');
+                $this->audit($user, 'account_locked_auto', $user);
             }
 
             throw ValidationException::withMessages([
@@ -123,7 +122,8 @@ class LoginController extends Controller
 
         if (! $user->hasVerifiedEmail()) {
             $user->markEmailAsVerified();
-            activity()->causedBy($user)->performedOn($user)->log('email_verified');
+
+            $this->audit($user, 'email_verified', $user);
         }
 
         return redirect()->route('login')

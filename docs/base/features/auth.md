@@ -42,8 +42,9 @@ status: implemented
 - Force delete removes the row permanently.
 
 ## User CRUD audit logging
-- User mutations are logged from controller layer: `user_created`, `user_updated`, `user_deleted`, `user_restored`, `user_permanently_deleted`.
+- User mutations are logged from controller layer via `App\Http\Controllers\Concerns\Auditable`: `user_created`, `user_updated`, `user_deleted`, `user_restored`, `user_permanently_deleted`.
 - Lock, unlock, and admin reset-password are logged separately: `user_locked`, `user_unlocked`, `user_reset_link_sent`.
+- Auth controllers use the same trait: `LoginController` logs `account_locked_auto`, `email_verified`; `ForgotPasswordController` logs `password_reset_request`.
 
 ## Self-service
 - Profile: name, avatar, phone; change password; view active sessions.

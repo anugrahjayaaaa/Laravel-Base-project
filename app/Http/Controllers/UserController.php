@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Controllers\Concerns\Sortable;
 use App\Http\Requests\BulkActionRequest;
 use App\Http\Requests\User\UserStoreRequest;
@@ -18,7 +19,7 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    use Sortable;
+    use Sortable, Auditable;
 
     public function __construct(private UserService $users, private BulkDeleteService $bulk) {}
 
@@ -50,15 +51,10 @@ class UserController extends Controller
         $plain = $request->validated()['password'];
         $user = $this->users->create($request->validated());
 
-        activity()->causedBy($request->user())
-            ->performedOn($user)
-            ->withProperties([
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'username' => $user->username,
-                'email' => $user->email,
-            ])
-            ->log('user_created');
+        $this->audit($user, 'user_created', $request->user(), [
+            'username' => $user->username,
+            'email' => $user->email,
+        ]);
 
         if ($user) {
             $user->sendEmailVerificationNotification();
@@ -83,9 +79,7 @@ class UserController extends Controller
     {
         $this->users->update($user, $request->validated());
 
-        activity()->causedBy(auth()->user())
-            ->performedOn($user)
-            ->log('user_updated');
+        $this->audit($user, 'user_updated', $request->user());
 
         return redirect()->route('users.index')->with('success', __('messages.user_updated'));
     }
@@ -98,9 +92,7 @@ class UserController extends Controller
         $user = User::withTrashed()->findOrFail($id);
         $this->users->unlock($user);
 
-        activity()->causedBy(auth()->user())
-            ->performedOn($user)
-            ->log('user_unlocked');
+        $this->audit($user, 'user_unlocked', auth()->user());
 
         return redirect()->route('users.index')->with('success', __('messages.user_unlocked'));
     }
@@ -116,9 +108,7 @@ class UserController extends Controller
         $user = User::withTrashed()->findOrFail($id);
         $this->users->lock($user);
 
-        activity()->causedBy(auth()->user())
-            ->performedOn($user)
-            ->log('user_locked');
+        $this->audit($user, 'user_locked', auth()->user());
 
         return redirect()->route('users.index')->with('success', __('messages.user_locked'));
     }
@@ -133,9 +123,7 @@ class UserController extends Controller
         $status = $this->users->sendResetPassword($user);
 
         if ($status === Password::RESET_LINK_SENT) {
-            activity()->causedBy(auth()->user())
-                ->performedOn($user)
-                ->log('user_reset_link_sent');
+            $this->audit($user, 'user_reset_link_sent', auth()->user());
 
             return redirect()->route('users.index')->with('success', __('messages.reset_link_sent', ['email' => $user->email]));
         }
@@ -165,9 +153,7 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', __('messages.cannot_delete_self'));
         }
 
-        activity()->causedBy(auth()->user())
-            ->performedOn($user)
-            ->log('user_deleted');
+        $this->audit($user, 'user_deleted', $request->user());
 
         $user->delete();
 
@@ -178,9 +164,7 @@ class UserController extends Controller
     {
         $user = User::withTrashed()->findOrFail($id);
 
-        activity()->causedBy(auth()->user())
-            ->performedOn($user)
-            ->log('user_restored');
+        $this->audit($user, 'user_restored', $request->user());
 
         $user->restore();
 
@@ -195,9 +179,7 @@ class UserController extends Controller
 
         $user = User::withTrashed()->findOrFail($id);
 
-        activity()->causedBy(auth()->user())
-            ->performedOn($user)
-            ->log('user_force_deleted');
+        $this->audit($user, 'user_force_deleted', $request->user());
 
         $user->forceDelete();
 

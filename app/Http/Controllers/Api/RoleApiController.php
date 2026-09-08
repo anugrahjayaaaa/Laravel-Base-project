@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Requests\Rbac\RoleStoreRequest;
 use App\Http\Requests\Rbac\RoleUpdateRequest;
 use App\Http\Resources\RoleResource;
@@ -11,6 +12,7 @@ use App\Models\Role;
 use App\Services\PlanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @group Roles
@@ -19,6 +21,7 @@ use Illuminate\Http\Request;
  */
 class RoleApiController extends Controller
 {
+    use Auditable;
     /**
      * Filter permission IDs through the plan's allowed_permissions snapshot.
      * Mirrors RoleController::filterPermissions — server-side enforcement, not
@@ -62,6 +65,8 @@ class RoleApiController extends Controller
         $perms = $this->filterPermissions($data['permissions'] ?? [], $plan);
         $role->syncPermissions($perms);
 
+        $this->audit($role, 'role_created', $request->user());
+
         return response()->json(new RoleResource($role->load('permissions')), 201);
     }
 
@@ -79,12 +84,17 @@ class RoleApiController extends Controller
         $perms = $this->filterPermissions($data['permissions'] ?? [], $plan);
         $role->syncPermissions($perms);
 
+        $this->audit($role, 'role_updated', $request->user());
+
         return response()->json(new RoleResource($role->load('permissions')));
     }
 
     public function destroy(Role $role): JsonResponse
     {
         abort_if($role->name === 'super-admin', 403, __('messages.cannot_delete_super_admin'));
+
+        $this->audit($role, 'role_deleted', Auth::user());
+
         $role->delete();
 
         return response()->json(['message' => __('messages.role_deleted')]);
@@ -92,7 +102,11 @@ class RoleApiController extends Controller
 
     public function restore(int $id): JsonResponse
     {
-        Role::withTrashed()->findOrFail($id)->restore();
+        $role = Role::withTrashed()->findOrFail($id);
+
+        $this->audit($role, 'role_restored', Auth::user());
+
+        $role->restore();
 
         return response()->json(['message' => __('messages.role_restored')]);
     }
@@ -100,7 +114,12 @@ class RoleApiController extends Controller
     public function forceDelete(int $id): JsonResponse
     {
         abort_if(Role::withTrashed()->findOrFail($id)->name === 'super-admin', 403, __('messages.cannot_permanently_delete_super_admin'));
-        Role::withTrashed()->findOrFail($id)->forceDelete();
+
+        $role = Role::withTrashed()->findOrFail($id);
+
+        $this->audit($role, 'role_permanently_deleted', Auth::user());
+
+        $role->forceDelete();
 
         return response()->json(['message' => __('messages.role_permanently_deleted')]);
     }

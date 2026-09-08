@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Requests\Rbac\PermissionStoreRequest;
 use App\Http\Requests\Rbac\PermissionUpdateRequest;
 use App\Http\Resources\PermissionResource;
 use App\Models\Permission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @group Permissions
@@ -17,6 +19,8 @@ use Illuminate\Http\Request;
  */
 class PermissionApiController extends Controller
 {
+    use Auditable;
+
     public function index(Request $request): JsonResponse
     {
         $permissions = Permission::withTrashed()
@@ -35,6 +39,8 @@ class PermissionApiController extends Controller
     {
         $permission = Permission::create(['name' => $request->validated()['name'], 'guard_name' => 'web']);
 
+        $this->audit($permission, 'permission_created', Auth::user());
+
         return response()->json(new PermissionResource($permission), 201);
     }
 
@@ -47,11 +53,15 @@ class PermissionApiController extends Controller
     {
         $permission->update(['name' => $request->validated()['name']]);
 
+        $this->audit($permission, 'permission_updated', Auth::user());
+
         return response()->json(new PermissionResource($permission));
     }
 
     public function destroy(Permission $permission): JsonResponse
     {
+        $this->audit($permission, 'permission_deleted', Auth::user());
+
         $permission->delete();
 
         return response()->json(['message' => __('messages.permission_deleted')]);
@@ -59,14 +69,22 @@ class PermissionApiController extends Controller
 
     public function restore(int $id): JsonResponse
     {
-        Permission::withTrashed()->findOrFail($id)->restore();
+        $permission = Permission::withTrashed()->findOrFail($id);
+
+        $this->audit($permission, 'permission_restored', Auth::user());
+
+        $permission->restore();
 
         return response()->json(['message' => __('messages.permission_restored')]);
     }
 
     public function forceDelete(int $id): JsonResponse
     {
-        Permission::withTrashed()->findOrFail($id)->forceDelete();
+        $permission = Permission::withTrashed()->findOrFail($id);
+
+        $this->audit($permission, 'permission_permanently_deleted', Auth::user());
+
+        $permission->forceDelete();
 
         return response()->json(['message' => __('messages.permission_permanently_deleted')]);
     }

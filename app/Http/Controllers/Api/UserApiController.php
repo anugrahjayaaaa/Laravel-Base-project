@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Requests\User\UserStoreRequest;
 use App\Http\Requests\User\UserUpdateRequest;
 use App\Http\Resources\UserResource;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
 
 /**
@@ -19,6 +21,8 @@ use Illuminate\Support\Facades\Password;
  */
 class UserApiController extends Controller
 {
+    use Auditable;
+
     public function __construct(private UserService $users) {}
 
     /** List users (paginated, optional ?q= search). */
@@ -46,12 +50,10 @@ class UserApiController extends Controller
     {
         $user = $this->users->create($request->validated());
 
-        activity()->causedBy($request->user())->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+        $this->audit($user, 'user_created', $request->user(), [
             'target_user_id' => $user->id,
             'target_email' => $user->email,
-        ])->performedOn($user)->log('user_created');
+        ]);
 
         return response()->json(new UserResource($user->load('roles')), 201);
     }
@@ -63,12 +65,10 @@ class UserApiController extends Controller
     {
         $this->users->update($user, $request->validated());
 
-        activity()->causedBy($request->user())->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+        $this->audit($user, 'user_updated', $request->user(), [
             'target_user_id' => $user->id,
             'target_email' => $user->email,
-        ])->performedOn($user)->log('user_updated');
+        ]);
 
         return response()->json(new UserResource($user->load('roles')));
     }
@@ -76,14 +76,12 @@ class UserApiController extends Controller
     /** Soft-delete a user. */
     public function destroy(Request $request, User $user): JsonResponse
     {
-        abort_if($user->id === auth()->id(), 403, __('messages.cannot_delete_self'));
+        abort_if($user->id === Auth::id(), 403, __('messages.cannot_delete_self'));
 
-        activity()->causedBy($request->user())->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+        $this->audit($user, 'user_deleted', $request->user(), [
             'target_user_id' => $user->id,
             'target_email' => $user->email,
-        ])->performedOn($user)->log('user_deleted');
+        ]);
 
         $user->delete();
 
@@ -95,12 +93,10 @@ class UserApiController extends Controller
     {
         $user = User::withTrashed()->findOrFail($id);
 
-        activity()->causedBy($request->user())->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+        $this->audit($user, 'user_restored', $request->user(), [
             'target_user_id' => $user->id,
             'target_email' => $user->email,
-        ])->performedOn($user)->log('user_restored');
+        ]);
 
         $user->restore();
 
@@ -110,15 +106,14 @@ class UserApiController extends Controller
     /** Permanently delete a user. */
     public function forceDelete(Request $request, int $id): JsonResponse
     {
-        abort_if($id === auth()->id(), 403, __('messages.cannot_delete_self_permanently'));
+        abort_if($id === Auth::id(), 403, __('messages.cannot_delete_self_permanently'));
+
         $user = User::withTrashed()->findOrFail($id);
 
-        activity()->causedBy($request->user())->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+        $this->audit($user, 'user_force_deleted', $request->user(), [
             'target_user_id' => $user->id,
             'target_email' => $user->email,
-        ])->performedOn($user)->log('user_force_deleted');
+        ]);
 
         $user->forceDelete();
 
@@ -128,16 +123,14 @@ class UserApiController extends Controller
     /** Permanently lock an account. */
     public function lock(Request $request, int $id): JsonResponse
     {
-        abort_if($id === auth()->id(), 403, __('messages.cannot_lock_self'));
+        abort_if($id === Auth::id(), 403, __('messages.cannot_lock_self'));
         $user = User::withTrashed()->findOrFail($id);
         $this->users->lock($user);
 
-        activity()->causedBy($request->user())->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+        $this->audit($user, 'user_locked', $request->user(), [
             'target_user_id' => $user->id,
             'target_email' => $user->email,
-        ])->performedOn($user)->log('user_locked');
+        ]);
 
         return response()->json(['message' => __('messages.user_locked')]);
     }
@@ -148,12 +141,10 @@ class UserApiController extends Controller
         $user = User::withTrashed()->findOrFail($id);
         $this->users->unlock($user);
 
-        activity()->causedBy($request->user())->withProperties([
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+        $this->audit($user, 'user_unlocked', $request->user(), [
             'target_user_id' => $user->id,
             'target_email' => $user->email,
-        ])->performedOn($user)->log('user_unlocked');
+        ]);
 
         return response()->json(['message' => __('messages.user_unlocked')]);
     }
@@ -165,12 +156,10 @@ class UserApiController extends Controller
         $status = $this->users->sendResetPassword($user);
 
         if ($status === Password::RESET_LINK_SENT) {
-            activity()->causedBy($request->user())->withProperties([
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
+            $this->audit($user, 'user_reset_link_sent', $request->user(), [
                 'target_user_id' => $user->id,
                 'target_email' => $user->email,
-            ])->performedOn($user)->log('user_reset_link_sent');
+            ]);
         }
 
         return $status === Password::RESET_LINK_SENT

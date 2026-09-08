@@ -38,11 +38,34 @@ id | causer_id | causer_name | action | subject_type | subject_id
 
 ## Implementation Reference (functions)
 
-Observers live in `app/Observers/` and are registered in `AppServiceProvider`.
-All write a row to **DB table `activity_log`** (spatie/laravel-activitylog).
+### HTTP audit: controller trait
+For web + API controllers, audit logging lives in the controller via
+`App\Http\Controllers\Concerns\Auditable`:
+- `audit($model, $action, $causer, $properties)` — logs a subject-bound action
+  with IP/user_agent auto-attached.
+- `auditAction($action, $causer, $properties)` — logs an action without a subject
+  (e.g. password reset request).
 
-### `UserObserver`, `RoleObserver`, `PermissionObserver`
-Each has: `created`, `updated`, `deleted` (soft), `restored`, `forceDeleted`.
+**Why controller?** HTTP controllers have access to the current `Request`
+(IP, user agent) and authenticated user (`Auth::user()`). Moving audit calls
+here keeps controllers thin without observers duplicating context.
+
+### Controllers currently using `Auditable`
+- `App\Http\Controllers\Auth\LoginController`
+- `App\Http\Controllers\Auth\ForgotPasswordController`
+- `App\Http\Controllers\UserController`
+- `App\Http\Controllers\RoleController`
+- `App\Http\Controllers\PermissionController`
+- `App\Http\Controllers\Api\AuthController`
+- `App\Http\Controllers\Api\AuthApiController`
+- `App\Http\Controllers\Api\UserApiController`
+- `App\Http\Controllers\Api\RoleApiController`
+- `App\Http\Controllers\Api\PermissionApiController`
+
+### Observers
+`UserObserver`, `RoleObserver`, `PermissionObserver` are kept as a fallback
+for non-HTTP mutations only (commands/jobs/artisan). Observers write to
+**DB table `activity_log`** (spatie/laravel-activitylog).
 
 **`updated($model)`** (before/after diff)
 - Logs `old` (from `getOriginal()`) and `new` (the dirty fields) into `properties`.
