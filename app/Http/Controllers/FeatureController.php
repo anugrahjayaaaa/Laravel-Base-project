@@ -9,6 +9,7 @@ use Laravel\Pennant\Feature;
 
 class FeatureController extends Controller
 {
+    use Auditable;
     public function index(): View
     {
         $order = ['access', 'monitoring', 'settings', 'billing', 'workspace', 'other'];
@@ -36,6 +37,8 @@ class FeatureController extends Controller
             : Feature::deactivate($slug);
 
         $label = featureLabel($slug);
+
+        $this->auditAction($request->boolean('enabled') ? 'feature_enabled' : 'feature_disabled', $request->user(), ['slug' => $slug, 'label' => $label]);
 
         return redirect()->route('features.index')->with(
             'success',

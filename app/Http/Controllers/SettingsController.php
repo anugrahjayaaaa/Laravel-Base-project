@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Requests\Settings\SystemSettingsRequest;
 use App\Models\Plan;
 use App\Models\Role;
@@ -19,6 +20,7 @@ use Illuminate\View\View;
  */
 class SettingsController extends Controller
 {
+    use Auditable;
     /** Show the system settings page. */
     public function index(): View
     {
@@ -44,6 +46,8 @@ class SettingsController extends Controller
         Setting::set('license_mode', $data['license_mode']);
         Setting::set('default_plan', $data['default_plan']);
         Setting::set('default_role', $data['default_role']);
+
+        $this->auditAction('settings_updated');
 
         return back()->with('status', __('messages.settings_updated'));
     }
