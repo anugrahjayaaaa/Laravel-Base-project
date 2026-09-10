@@ -30,7 +30,7 @@ class PermissionSeeder extends Seeder
         'logs.view',
         // settings
         'api-token.view', 'api-token.create', 'api-token.delete',
-        'translation.view', 'translation.edit',
+        'translation.view', 'translation.create', 'translation.edit',
         // feature management
         'feature.manage',
         // billing

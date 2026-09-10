@@ -14,7 +14,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 || 8 | Audit | `complete` | observer cleanup (created fallback only), service audit scoped with on($license), all controllers use Auditable trait |
 || 9 | Notifications | `complete` | mark-all-read audit added (web + API) |
 || 10 | Logs | `complete` | search bar implemented + test added |
-| 11 | Translation / i18n | `pending` | — |
+|| 11 | Translation / i18n | `complete` | \$title uses ui() key; create form + add button added; store + audit |
 | 12 | UI Consistency / Shared Components | `pending` | — |
 | 13 | Dashboard | `pending` | — |
 | 14 | API Hardening | `pending` | — |

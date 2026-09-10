@@ -1,11 +1,14 @@
 @extends('layouts.app')
-@section('title', 'Translations')
+@section('title', ui('translations'))
 @section('content')
 @php($u = auth()->user())
 <div class="content-header">
     <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="m-0 h3">{{ ui('translations') }}</h1>
+            @can('translation.create')
+            <a href="{{ route('translations.create') }}" class="btn btn-sm btn-primary">{{ ui('add') }} {{ ui('translation') }}</a>
+            @endcan
         </div>
         <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
             <form method="GET" class="d-flex flex-grow-1" style="max-width:420px">

@@ -124,6 +124,8 @@ Route::middleware('auth')->group(function () {
     // Translations management (under Settings, gated by RBAC + feature flag)
     Route::prefix('settings')->middleware(['feature:translations', 'can:translation.view'])->group(function () {
         Route::get('/translations', [TranslationController::class, 'index'])->name('translations.index');
+        Route::get('/translations/create', [TranslationController::class, 'create'])->name('translations.create')->middleware('can:translation.create');
+        Route::post('/translations', [TranslationController::class, 'store'])->name('translations.store')->middleware('can:translation.create');
         Route::get('/translations/{languageLine}/edit', [TranslationController::class, 'edit'])->name('translations.edit')->middleware('can:translation.edit');
         Route::put('/translations/{languageLine}', [TranslationController::class, 'update'])->name('translations.update')->middleware('can:translation.edit');
     });

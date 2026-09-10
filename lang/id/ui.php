@@ -247,6 +247,9 @@ return [
     'group' => 'Grup',
     'key' => 'Kunci',
     'no_translations' => 'Tidak ada terjemahan ditemukan.',
+    'add' => 'Tambah',
+    'add_translation' => 'Tambah Terjemahan',
+    'translation_created' => 'Terjemahan dibuat.',
 
     // ── bulk actions ──
     'bulk_action' => 'Aksi massal',

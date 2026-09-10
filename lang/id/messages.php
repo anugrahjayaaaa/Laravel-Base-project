@@ -115,4 +115,5 @@ return [
     'current_plan' => 'Paket saat ini',
     'cancel_subscription' => 'Batalkan langganan',
     'notifications_marked_read' => 'Semua notifikasi ditandai sudah dibaca.',
+    'translation_created' => 'Terjemahan dibuat.',
 ];

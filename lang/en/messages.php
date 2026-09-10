@@ -117,4 +117,5 @@ return [
     'current_plan' => 'Current plan',
     'cancel_subscription' => 'Cancel subscription',
     'notifications_marked_read' => 'All notifications marked as read.',
+    'translation_created' => 'Translation created.',
 ];

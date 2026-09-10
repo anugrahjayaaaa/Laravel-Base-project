@@ -247,6 +247,9 @@ return [
     'group' => 'Group',
     'key' => 'Key',
     'no_translations' => 'No translations found.',
+    'add' => 'Add',
+    'add_translation' => 'Add Translation',
+    'translation_created' => 'Translation created.',
 
     // ── bulk actions ──
     'bulk_action' => 'Bulk action',
