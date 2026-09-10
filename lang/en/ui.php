@@ -218,6 +218,7 @@ return [
     'date' => 'Date',
     'message' => 'Message',
     'no_log_entries' => 'No log entries.',
+    'search_logs' => 'Search logs',
     'stack_trace' => 'Stack trace',
     'all_actions' => 'All actions',
     'time' => 'Time',

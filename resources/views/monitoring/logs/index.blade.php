@@ -28,6 +28,12 @@
                             <option value="{{ $l }}" @if($l === $activeLevel) selected @endif>{{ ucfirst($l) }}</option>
                         @endforeach
                     </select>
+
+                    <label class="mb-0 ms-2">{{ ui('search_logs') }}</label>
+                    <input type="search" name="q" value="{{ request('q') }}" class="form-control form-control-sm" style="max-width:240px" placeholder="{{ ui('search_logs') }}…">
+                    @if(request('q'))
+                        <a href="{{ request()->fullUrlWithQuery(['q' => null]) }}" class="btn btn-sm btn-outline-secondary ms-1">{{ ui('close') }}</a>
+                    @endif
                 </form>
                 @if($current)
                 <a href="?file={{ urlencode($current) }}&dl={{ urlencode($current) }}" class="btn btn-sm btn-outline-secondary ms-auto">{{ ui('download') }}</a>

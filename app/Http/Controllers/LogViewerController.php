@@ -22,6 +22,17 @@ class LogViewerController extends Controller
             $logs = array_filter($logs, fn ($e) => ($e['level'] ?? '') === $level);
         }
 
+        // ponytail: text search — strpos on text + in_file + stack (plain, case-insensitive)
+        $q = trim((string) $request->get('q', ''));
+        if ($q !== '') {
+            $qLower = mb_strtolower($q);
+            $logs = array_filter($logs, fn ($e) =>
+                str_contains(mb_strtolower($e['text'] ?? ''), $qLower)
+                || str_contains(mb_strtolower($e['in_file'] ?? ''), $qLower)
+                || str_contains(mb_strtolower($e['stack'] ?? ''), $qLower)
+            );
+        }
+
         $levels = ['error', 'warning', 'info', 'debug', 'notice', 'critical', 'alert', 'emergency'];
 
         return view('monitoring.logs.index', [
@@ -30,6 +41,7 @@ class LogViewerController extends Controller
             'current' => $log->getFileName(),
             'levels' => $levels,
             'activeLevel' => $level,
+            'q' => $request->get('q'),
         ]);
     }
 }

@@ -218,6 +218,7 @@ return [
     'date' => 'Tanggal',
     'message' => 'Pesan',
     'no_log_entries' => 'Tidak ada entri log.',
+    'search_logs' => 'Cari log',
     'stack_trace' => 'Stack trace',
     'all_actions' => 'Semua tindakan',
     'time' => 'Waktu',
