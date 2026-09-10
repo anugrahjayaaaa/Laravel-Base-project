@@ -17,7 +17,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 || 11 | Translation / i18n | `complete` | \$title uses ui() key; create form + add button added; store + audit |
 || 12 | UI Consistency / Shared Components | `complete` | unified restore/delete icons via action-buttons component; i18n title keys |
 | 13 | Dashboard | `complete` | recent activity feed + auditCount card |
-| 14 | API Hardening | `pending` | — |
+| 14 | API Hardening | `complete` | added restore/force-delete routes + manage permissions |
 | 15 | Cross-Feature Regression | `pending` | — |
 
 Phase 1 includes: login-time lock enforcement, API lock enforcement, login toggle i18n, locked-user modal before redirect to login, auto-lock audit log.

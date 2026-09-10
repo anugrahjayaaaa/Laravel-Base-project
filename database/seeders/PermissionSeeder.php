@@ -17,13 +17,13 @@ class PermissionSeeder extends Seeder
     private const PERMISSIONS = [
         // users
         'user.view', 'user.create', 'user.edit', 'user.delete', 'user.restore',
-        'user.force-delete', 'user.lock',
+        'user.force-delete', 'user.lock', 'user.manage',
         // roles
         'role.view', 'role.create', 'role.edit', 'role.delete', 'role.restore',
-        'role.force-delete',
+        'role.force-delete', 'role.manage',
         // permissions
         'permission.view', 'permission.create', 'permission.edit', 'permission.delete',
-        'permission.restore', 'permission.force-delete',
+        'permission.restore', 'permission.force-delete', 'permission.manage',
         // audit / monitoring
         'audit.view',
         'session.view', 'session.revoke',
