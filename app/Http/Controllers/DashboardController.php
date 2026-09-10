@@ -23,11 +23,18 @@ class DashboardController extends Controller
         $licenseStatus = LicenseService::status($user);
         $licenseDaysLeft = LicenseService::daysLeft($user);
 
+        // ponytail: recent audit trail for dashboard — latest 5, eager-load causer
+        $recentActivity = Activity::with('causer')
+            ->latest()
+            ->limit(5)
+            ->get();
+
         return view('dashboard', [
             'title' => 'Dashboard',
             'userCount' => User::count(),
             'roleCount' => Role::count(),
             'auditCount' => Activity::count(),
+            'recentActivity' => $recentActivity,
             'licenseStatus' => $licenseStatus,
             'licenseDaysLeft' => $licenseDaysLeft,
             'activePlan' => $licenseStatus === 'none'

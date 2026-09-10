@@ -89,3 +89,17 @@ it('dashboard renders license badge', function () {
         ->assertSee('License')
         ->assertSee('Lifetime');
 });
+
+it('dashboard shows recent activity feed', function () {
+    $user = User::where('email', 'admin@laravel-base.local')->first();
+    $this->actingAs($user);
+
+    activity()
+        ->causedBy($user)
+        ->withProperties(['model' => 'User'])
+        ->log('login');
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee(ui('recent_activity'));
+});

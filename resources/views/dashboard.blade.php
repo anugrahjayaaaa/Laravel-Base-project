@@ -80,4 +80,26 @@ use App\Services\LicenseService;
         <p class="text-muted mb-0">{{ ui('dashboard_subtitle') }}</p>
     </div>
 </div>
+
+{{-- Recent activity feed --}}
+@if($recentActivity->isNotEmpty())
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-header">{{ ui('recent_activity') }}</div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            @foreach($recentActivity as $activity)
+            <div class="list-group-item py-2">
+                <div class="d-flex justify-content-between">
+                    <span class="badge bg-secondary text-bg-secondary">{{ $activity->description }}</span>
+                    <span class="text-muted small">{{ $activity->created_at->format('M d, H:i') }}</span>
+                </div>
+                <div class="text-muted small">
+                    {{ $activity->causer?->username ?? ($activity->properties['identifier'] ?? ui('no_activity')) }}
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
 @endsection
