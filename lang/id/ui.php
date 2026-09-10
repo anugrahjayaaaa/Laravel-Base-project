@@ -146,7 +146,7 @@ return [
     'no_features' => 'Tidak ada fitur.',
     'feature_group_access' => 'Manajemen Akses',
     'feature_group_monitoring' => 'Pemantauan',
-    'feature_group_system' => 'Pengaturan',
+    'feature_group_settings' => 'Pengaturan',
     'feature_group_billing' => 'Penagihan',
     'feature_group_workspace' => 'Ruang Kerja',
     'feature_group_other' => 'Lainnya',

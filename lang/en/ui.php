@@ -146,7 +146,7 @@ return [
     'no_features' => 'No features.',
     'feature_group_access' => 'Access Management',
     'feature_group_monitoring' => 'Monitoring',
-    'feature_group_system' => 'Settings',
+    'feature_group_settings' => 'Settings',
     'feature_group_billing' => 'Billing',
     'feature_group_workspace' => 'Workspace',
     'feature_group_other' => 'Other',

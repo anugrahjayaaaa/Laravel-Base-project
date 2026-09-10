@@ -7,7 +7,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 | 1 | Authentication Core | `complete` | `docs/qa/phase-reports/phase-01-authentication.md` |
 | 2 | User Lifecycle / User CRUD | `complete` | `docs/qa/phase-reports/phase-02-user-lifecycle.md` |
 | 3 | RBAC / Roles / Permissions | `complete` | `docs/qa/phase-reports/phase-03-rbac.md` |
-| 4 | Feature Flags + Navigation | `pending` | — |
+|| 4 | Feature Flags + Navigation | `complete` | (label alignment `feature_group_settings` unified) |
 | 5 | Sessions | `complete` | `docs/qa/phase-reports/phase-05-sessions.md` |
 | 6 | Profile + Password + Verification | `complete` | `docs/qa/phase-reports/phase-06-profile-password-verification.md` |
 | 7 | Settings + Registration | `pending` | — |
@@ -23,7 +23,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 Phase 1 includes: login-time lock enforcement, API lock enforcement, login toggle i18n, locked-user modal before redirect to login, auto-lock audit log.
 Phase 2 includes: admin-create random password in form + email, verification email handling, username/email uniqueness behavior, delete/restore auth behavior, user CRUD audit log.
 Phase 3 includes: permission add/remove sync to role, role change access, sidebar permission mismatch, role/permission CRUD audit log.
-Phase 4 includes: feature page group label alignment (`feature_group_system` in code/lang; tracker/docs reference `feature_group_settings`).
+Phase 4 includes: feature page group label alignment (`feature_group_settings` in code/lang/config/docs — previously `feature_group_system`, now unified).
 Phase 5 includes: session invalidation on admin-lock for already-logged-in user, session list permission gating, header user-dropdown session link visibility, logout-others password UX alignment, same-credential login on new device/incognito must logout previous session, session logout audit log.
 Phase 6 includes: profile update audit log, password change audit log, verification flow coverage for web and API.
 Phase 7 includes: registration settings, system settings update, feature toggle audit log.
