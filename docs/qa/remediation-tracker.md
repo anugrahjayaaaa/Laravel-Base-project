@@ -15,7 +15,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 || 9 | Notifications | `complete` | mark-all-read audit added (web + API) |
 || 10 | Logs | `complete` | search bar implemented + test added |
 || 11 | Translation / i18n | `complete` | \$title uses ui() key; create form + add button added; store + audit |
-| 12 | UI Consistency / Shared Components | `pending` | — |
+|| 12 | UI Consistency / Shared Components | `complete` | unified restore/delete icons via action-buttons component; i18n title keys |
 | 13 | Dashboard | `pending` | — |
 | 14 | API Hardening | `pending` | — |
 | 15 | Cross-Feature Regression | `pending` | — |

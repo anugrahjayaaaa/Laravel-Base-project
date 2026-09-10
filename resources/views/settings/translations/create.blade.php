@@ -1,7 +1,6 @@
 @extends('layouts.app')
 @section('title', ui('add_translation'))
 @section('content')
-@php($title = ui('add_translation'))
 @include('partials.flash-message')
 
 <h3>{{ ui('add_translation') }}</h3>

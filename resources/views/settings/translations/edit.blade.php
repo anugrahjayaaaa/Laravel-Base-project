@@ -1,6 +1,5 @@
 @extends('layouts.app')
 @section('content')
-@php($title = ui('edit_translation'))
 @include('partials.flash-message')
 
 <h3>{{ ui('edit_translation') }}: {{ $line->group }}.{{ $line->key }}</h3>
