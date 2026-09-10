@@ -3,57 +3,47 @@
 namespace App\Observers;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 
 class UserObserver
 {
-    public function created($user)
-    {
-        // ponytail: audit moved to controller for request-scoped metadata;
-        // retained here only as fallback for non-HTTP creation paths.
-    }
-
-    public function updated($user)
-    {
-        $dirty = $user->getDirty();
-        unset($dirty['password'], $dirty['remember_token']); // ponytail: never log secrets
-        $old = [];
-        foreach ($dirty as $k => $v) {
-            $old[$k] = $user->getOriginal($k);
-        }
-        activity()->causedBy(auth()->user())->withProperties([
-            'ip' => Request::ip(), 'user_agent' => Request::userAgent(),
-            'old' => $old, 'new' => $dirty,
-        ])->performedOn($user)->log('user_updated');
-    }
-
-    public function deleted($user)
-    {
-        activity()->causedBy(auth()->user())->withProperties([
-            'ip' => Request::ip(), 'user_agent' => Request::userAgent(),
-        ])->performedOn($user)->log('user_deleted');
-    }
-
-    public function restored($user)
-    {
-        activity()->causedBy(auth()->user())->withProperties([
-            'ip' => Request::ip(), 'user_agent' => Request::userAgent(),
-        ])->performedOn($user)->log('user_restored');
-    }
-
     /**
-     * Log a permanent (hard) delete of a user to the audit trail.
-     *
-     * @param  User  $user  The soft-deleted-then-force-deleted user
-     * @return void
-     *
-     * @details Writes a 'user_force_deleted' activity row into DB table `activity_log`
-     * (spatie/activitylog). Unlike `deleted()` (soft delete), this is unrecoverable.
+     * Audit logs for user mutations are handled in controllers (`UserController`
+     * / `UserApiController`) for HTTP paths. This observer retains ONLY the
+     * `created` event as a NON-HTTP fallback (e.g. tinker / CLI seeders),
+     * guarded so it does not double-log when a controller already did.
      */
-    public function forceDeleted($user)
+
+    public function created(User $user): void
     {
-        activity()->causedBy(auth()->user())->withProperties([
-            'ip' => Request::ip(), 'user_agent' => Request::userAgent(),
-        ])->performedOn($user)->log('user_force_deleted');
+        // ponytail: non-HTTP fallback only; controller emits user_created for web/API.
+        if (Auth::user()) {
+            return; // already handled by controller
+        }
+        activity()->withProperties([
+            'ip' => Request::ip(),
+            'user_agent' => Request::userAgent(),
+        ])->performedOn($user)->log('user_created');
+    }
+
+    public function updated(User $user): void
+    {
+        // ponytail: controller-first audit; controller emits user_updated.
+    }
+
+    public function deleted(User $user): void
+    {
+        // ponytail: controller emits user_deleted.
+    }
+
+    public function restored(User $user): void
+    {
+        // ponytail: controller emits user_restored.
+    }
+
+    public function forceDeleted(User $user): void
+    {
+        // ponytail: controller emits user_force_deleted.
     }
 }

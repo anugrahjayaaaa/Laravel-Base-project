@@ -94,7 +94,8 @@ final class LicenseService
         // without touching global settings or revoking other users' licenses.
         if ($forUser) {
             $license->update(['issued_to' => $issuedTo ?? $forUser->email, 'status' => 'active']);
-            activity()->withProperties(['plan' => $license->plan_slug, 'user_id' => $license->user_id])
+            activity()->on($license)
+                ->withProperties(['plan' => $license->plan_slug, 'user_id' => $license->user_id, 'mode' => 'per_user'])
                 ->log('license.activated');
 
             return true;
@@ -110,7 +111,8 @@ final class LicenseService
         Setting::set('active_plan', $license->plan_slug);
         Setting::set('license_key', $key);
 
-        activity()->withProperties(['plan' => $license->plan_slug])
+        activity()->on($license)
+            ->withProperties(['plan' => $license->plan_slug, 'mode' => 'global'])
             ->log('license.activated');
 
         return true;
@@ -233,7 +235,8 @@ final class LicenseService
             Setting::set('active_plan', 'free');
             Setting::set('license_key', null);
         }
-        activity()->withProperties(['plan' => $license->plan_slug, 'reason' => $reason])
+        activity()->on($license)
+            ->withProperties(['plan' => $license->plan_slug, 'reason' => $reason])
             ->log('license.revoked');
     }
 }
