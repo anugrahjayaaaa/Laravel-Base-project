@@ -9,6 +9,8 @@ use App\Http\Requests\Profile\ProfileUpdateRequest;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -44,7 +46,7 @@ class ProfileApiController extends Controller
         $user = $request->user();
         $request->user()->update(['password' => Hash::make($request->validated()['password'])]);
         $user->tokens()->delete();
-        auth()->logoutOtherDevices($request->validated()['password']);
+        DB::table('sessions')->where('user_id', $user->id)->delete();
 
         $this->audit($user, 'password_changed', $user);
 

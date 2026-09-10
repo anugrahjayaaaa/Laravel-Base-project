@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\Auditable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -34,12 +33,7 @@ class SessionApiController extends Controller
     {
         DB::table('sessions')
             ->where('user_id', $request->user()->id)
-            ->where('id', '<>', $request->session()->getId())
             ->delete();
-
-        if ($request->filled('password')) {
-            Auth::logoutOtherDevices($request->password);
-        }
 
         $this->audit($request->user(), 'session_logout_others', $request->user());
 
