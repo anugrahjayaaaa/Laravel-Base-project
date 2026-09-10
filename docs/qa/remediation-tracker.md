@@ -10,7 +10,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 || 4 | Feature Flags + Navigation | `complete` | (label alignment `feature_group_settings` unified) |
 | 5 | Sessions | `complete` | `docs/qa/phase-reports/phase-05-sessions.md` |
 | 6 | Profile + Password + Verification | `complete` | `docs/qa/phase-reports/phase-06-profile-password-verification.md` |
-| 7 | Settings + Registration | `pending` | — |
+|| 7 | Settings + Registration | `complete` | feature toggle audit log added |
 | 8 | Audit | `pending` | — |
 | 9 | Notifications | `pending` | — |
 | 10 | Logs | `pending` | — |
