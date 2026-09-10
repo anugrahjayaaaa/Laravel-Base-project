@@ -12,7 +12,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 | 6 | Profile + Password + Verification | `complete` | `docs/qa/phase-reports/phase-06-profile-password-verification.md` |
 || 7 | Settings + Registration | `complete` | feature toggle audit log added |
 || 8 | Audit | `complete` | observer cleanup (created fallback only), service audit scoped with on($license), all controllers use Auditable trait |
-| 9 | Notifications | `pending` | — |
+|| 9 | Notifications | `complete` | mark-all-read audit added (web + API) |
 | 10 | Logs | `pending` | — |
 | 11 | Translation / i18n | `pending` | — |
 | 12 | UI Consistency / Shared Components | `pending` | — |

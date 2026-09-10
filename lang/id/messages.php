@@ -114,4 +114,5 @@ return [
     'no_data' => 'Belum ada data.',
     'current_plan' => 'Paket saat ini',
     'cancel_subscription' => 'Batalkan langganan',
+    'notifications_marked_read' => 'Semua notifikasi ditandai sudah dibaca.',
 ];
