@@ -50,3 +50,36 @@ it('records old and new values on user update (no password)', function () {
     expect($log->properties['new']['name'])->toBe('Changed Name');
     expect($log->properties['new'])->not->toHaveKey('password'); // secret never logged
 });
+
+it('cross-feature regression: all mutation features emit audit logs', function () {
+    $causerId = $this->user->id;
+
+    // User update (via controller pattern)
+    $target = User::factory()->create(['username' => 'regtarget'.time(), 'name' => 'Before']);
+    $this->put(route('users.update', $target), ['name' => 'After', 'email' => "reg{$target->id}@example.com"]);
+    expect(Activity::where('description', 'user_updated')->where('causer_id', $causerId)->exists())->toBeTrue();
+
+    // Role create + permission attach (via controller to mirror HTTP audit)
+    $this->post(route('roles.store'), ['name' => 'reg_role', 'guard_name' => 'web'])
+        ->assertRedirect(route('roles.index'));
+    $role = Role::where('name', 'reg_role')->first();
+    $role->givePermissionTo('user.view');
+    expect(Activity::where('description', 'role_created')->where('causer_id', $causerId)->exists())->toBeTrue();
+
+    // Feature toggle
+    $this->post(route('features.toggle', 'translation'), [
+        'enabled' => true,
+    ]);
+    expect(Activity::where('description', 'feature_enabled')->where('causer_id', $causerId)->exists())->toBeTrue();
+
+    // Login event
+    auth()->logout();
+    $this->post(route('login.store'), [
+        'identifier' => 'superadmin',
+        'password' => '#Password123',
+    ])->assertRedirect(route('dashboard'));
+    expect(Activity::where('description', 'login_success')->exists())->toBeTrue();
+
+    // All logs must have non-null causer
+    expect(Activity::whereNull('causer_id')->count())->toBe(0);
+});

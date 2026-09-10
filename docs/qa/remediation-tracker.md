@@ -18,7 +18,7 @@ Sequential stabilization order. One phase at a time. Plan/billing deferred.
 || 12 | UI Consistency / Shared Components | `complete` | unified restore/delete icons via action-buttons component; i18n title keys |
 | 13 | Dashboard | `complete` | recent activity feed + auditCount card |
 | 14 | API Hardening | `complete` | added restore/force-delete routes + manage permissions |
-| 15 | Cross-Feature Regression | `pending` | — |
+| 15 | Cross-Feature Regression | `complete` | cross-feature audit regression test covers user/role/feature/login logs |
 
 Phase 1 includes: login-time lock enforcement, API lock enforcement, login toggle i18n, locked-user modal before redirect to login, auto-lock audit log.
 Phase 2 includes: admin-create random password in form + email, verification email handling, username/email uniqueness behavior, delete/restore auth behavior, user CRUD audit log.
