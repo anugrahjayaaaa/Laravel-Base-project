@@ -46,3 +46,11 @@ it('lets a feature.manage holder reach logs while the flag is off', function () 
 
     $this->actingAs($u)->get('/logs')->assertNotFound();
 });
+
+it('renders a search input on logs page', function () {
+    $u = User::where('email', 'admin@laravel-base.local')->first();
+    $this->actingAs($u)
+        ->get('/logs')
+        ->assertOk()
+        ->assertSee('name="q"', false);
+});
