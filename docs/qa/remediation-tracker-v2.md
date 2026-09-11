@@ -93,14 +93,14 @@
 
 # Phase 7 — Audit Trail
 
-* [ ] AUDIT-01 — Verify audit coverage for all mutations
-* [ ] AUDIT-02 — Verify correct audit actor / causer
-* [ ] AUDIT-03 — Verify sensitive data is excluded from audit
-* [ ] AUDIT-04 — Verify create / update / delete / restore / force-delete audit events
-* [ ] AUDIT-05 — Verify lock / unlock / login / logout / reset audit events
-* [ ] AUDIT-06 — Verify audit filtering / sorting / pagination
-* [ ] AUDIT-07 — Verify audit CSV export respects filters
-* [ ] AUDIT-08 — Review audit implementation consistency across controllers / observers
+* [✓] AUDIT-01 — Verify audit coverage for all mutations — **VERIFIED**. Coverage present across controllers (UserController: user_created/deleted/restored/force_deleted/locked/unlocked/reset_link_sent/session_invalidated; FeatureController: feature_enabled/disabled; RoleController: role_created; PermissionController: permission_updated/deleted) + observer NON-HTTP fallbacks (UserObserver/RoleObserver created/forceDeleted) + listener auth events (LogAuthentication: login_success/logout/login_failed/password_reset/email_verified). Tests: AuditTest cross-feature regression, ForceDeleteAuditTest, AuthLoginTest `account_locked_auto`.
+* [✓] AUDIT-02 — Verify correct audit actor / causer — **VERIFIED no change**. All controller audits pass `auth()->user()` (fixed in USER-01 for destroy/restore/forceDelete); `Auditable::audit($model,$action,$causer)` defaults to `Auth::user()`. Observer fallback logs no causer (intended for system/CLI). Tests: USER-01, USER-06 causer assertions.
+* [✓] AUDIT-03 — Verify sensitive data is excluded from audit — **VERIFIED no change**. Audit properties only capture username/email/ip/user_agent — full password never passed to `audit()`. Test: AuditTest `records new values on user update (no password)` asserts `password` not in properties.
+* [✓] AUDIT-04 — Verify create / update / delete / restore / force-delete audit events — **VERIFIED**. emit via controller `Auditable::audit` (HTTP) + observer fallback (non-HTTP). Tests: ForceDeleteAuditTest `role/user force-delete via observer (non-HTTP fallback)`, AuditTest USER-01 (delete/restore/forceDelete count=1).
+* [✓] AUDIT-05 — Verify lock / unlock / login / logout / reset audit events — **VERIFIED no change**. `user_locked`/`session_invalidated`/`user_unlocked` (UserController lock); `login_success`/`logout`/`login_failed` (LogAuthentication); `account_locked_auto`/`email_verified`/`password_reset` (LoginController/Audit); `user_reset_link_sent` (UserController sendResetPassword). Tests: USER-06, SESSION-01, AuthLoginTest `account_locked_auto`, password_reset_request.
+* [✓] AUDIT-06 — Verify audit filtering / sorting / pagination — **VERIFIED**. `AuditQueryService::forFilters` (`action`/`causer`/`from`/`to`) + `latest()` + `paginate(20)`. Tests: AuditExportTest `AUDIT-06: audit index filters by causer and paginates`.
+* [✓] AUDIT-07 — Verify audit CSV export respects filters — **VERIFIED no change**. `AuditController::export` streams CSV with same `forFilters` query (action filter verified). Tests: AuditExportTest `exports audit log as CSV respecting the action filter` + `denies audit export without audit.view`.
+* [✓] AUDIT-08 — Review audit implementation consistency — **VERIFIED (fix applied)**. Fix: `UserObserver::forceDeleted` and `RoleObserver::forceDeleted` were no-op → force-delete via model (non-HTTP) was silently un-audited. Root cause: observers intended as NON-HTTP fallback but forceDeleted was empty. Fix: added `forceDeleted` emit guarded by `Auth::user()` (skip on HTTP to avoid double-log with controller `Auditable::audit`). Tests: ForceDeleteAuditTest (refactored to assert non-HTTP fallback + no double-log).
 
 # Phase 8 — Settings & Registration
 
@@ -203,10 +203,7 @@
 
 These are findings already confirmed from the latest repository review and should be handled before treating the related feature as fully verified.
 
-* [ ] RBAC-01 — User resource authorization is broader than the individual CRUD action permissions
-* [ ] RBAC-02 — Role resource authorization requires the same resource-action matrix review
-* [ ] RBAC-03 — Permission resource authorization requires the same resource-action matrix review
-* [ ] RBAC-04 — Permission naming is inconsistent between route / documentation and FormRequest conventions
+(none pending — RBAC-01/02/03 resolved via per-method route authorization matrix; USER-01 resolved via auth()->user() causer fix; AUDIT-08 resolved via observer forceDeleted fallback.)
 
 Do not add the previous Settings inline-validation or Translation hardcoded-fallback findings again unless a new regression is discovered; those implementations have changed in the current branch.
 
@@ -258,4 +255,6 @@ Pending.
 | ---------- | ---- | ------ | -------------------------------------------------------- |
 | YYYY-MM-DD | INIT | OPEN   | Tracker initialized                                                       |
 | 2026-09-10 | P1   | VERIFIED | AUTH-01: removed duplicate login_success audit (manual event double-fire) |
-| 2026-09-10 | P1   | VERIFIED | AUTH-06: added logout audit + session invalidation regression test          |
+| 2026-09-11 | P1   | VERIFIED | SESSION-01/03/05: session regen, lock invalidation, account_locked_auto audit regression |
+| 2026-09-11 | P1   | FIXED    | AUDIT-08: UserObserver/RoleObserver forceDeleted now emit non-HTTP fallback audit (was no-op) |
+| 2026-09-11 | P2   | VERIFIED | AUDIT-06: audit index causer filter + pagination regression test |

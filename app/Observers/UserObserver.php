@@ -44,6 +44,14 @@ class UserObserver
 
     public function forceDeleted(User $user): void
     {
-        // ponytail: controller emits user_force_deleted.
+        // ponytail: non-HTTP fallback (tinker / CLI / seeder direct forceDelete).
+        // Controller emits user_force_deleted on HTTP paths; this guard prevents double-log.
+        if (Auth::user()) {
+            return;
+        }
+        activity()->withProperties([
+            'ip' => Request::ip(),
+            'user_agent' => Request::userAgent(),
+        ])->performedOn($user)->log('user_force_deleted');
     }
 }

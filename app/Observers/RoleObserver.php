@@ -48,6 +48,14 @@ class RoleObserver
 
     public function forceDeleted(Role $role): void
     {
-        // ponytail: controller emits role_force_deleted.
+        // ponytail: non-HTTP fallback (tinker / CLI / seeder direct forceDelete).
+        // Controller emits role_force_deleted on HTTP paths; guard prevents double-log.
+        if (Auth::user()) {
+            return;
+        }
+        activity()->withProperties([
+            'ip' => Request::ip(),
+            'user_agent' => Request::userAgent(),
+        ])->performedOn($role)->log('role_force_deleted');
     }
 }

@@ -77,6 +77,15 @@ it('locks account after 5 fails regardless of IP rotation', function () {
     expect(User::where('email', $email)->first()->fresh()->isLocked())->toBeTrue();
 });
 
+it('AUDIT-05: account_locked_auto audit fires on 5th failed login attempt', function () {
+    $u = User::where('email', 'admin@laravel-base.local')->first();
+    for ($i = 0; $i < 5; $i++) {
+        $this->post(route('login.store'), ['identifier' => $u->email, 'password' => 'wrong']);
+    }
+    expect(Activity::where('description', 'account_locked_auto')
+        ->where('subject_id', $u->id)->exists())->toBeTrue();
+});
+
 it('logs password_reset_request to audit on reset link send', function () {
     $u = User::where('email', 'admin@laravel-base.local')->first();
     $this->post(route('password.email'), ['email' => $u->email])->assertSessionHas('status');
