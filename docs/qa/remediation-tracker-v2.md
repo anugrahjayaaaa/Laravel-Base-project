@@ -84,12 +84,12 @@
 
 # Phase 6 — Feature Flags & Navigation
 
-* [ ] FEATURE-01 — Verify Pennant feature enforcement
-* [ ] FEATURE-02 — Verify feature + permission interaction
-* [ ] FEATURE-03 — Verify feature-disabled route behavior
-* [ ] FEATURE-04 — Verify sidebar visibility matches actual authorization
-* [ ] FEATURE-05 — Verify feature management authorization
-* [ ] FEATURE-06 — Verify superadmin / feature.manage behavior
+* [✓] FEATURE-01 — Verify Pennant feature enforcement — **VERIFIED no change**. `EnsureFeatureEnabled` middleware (`abort(404)` on `! Feature::active`) on all `feature:*` routes. `Feature::define(fn()=>true)` per-flag in AppServiceProvider; fails closed for unknown slugs. Tests: FeatureFlagTest `Feature::active() returns enabled state and fails closed when missing`.
+* [✓] FEATURE-02 — Verify feature + permission interaction — **VERIFIED no change**. `feature:*` (kill-switch 404) runs before `can:*` (permission). Disabled feature blocks everyone regardless of permission. Tests: FeatureFlagTest `blocks a non-manager when feature is off, even with permission`.
+* [✓] FEATURE-03 — Verify feature-disabled route behavior — **VERIFIED**. Routes under `feature:plans` / `feature:billing` return 404 when flags deactivated (config `disabled: true` default + deactivate). Tests: PlansBillingDisabledTest `plans and billing routes are inaccessible when disabled`.
+* [✓] FEATURE-04 — Verify sidebar visibility matches actual authorization — **VERIFIED no change**. Sidebar wraps each module link in `@feature(...)` (Pennant Blade directive); disabled → link hidden. Tests: FeatureFlagTest `hides a feature-off menu item from a non-manager sidebar` + `shows a feature-off menu item to a feature.manage holder` (kill-switch hides from all).
+* [✓] FEATURE-05 — Verify feature management authorization — **VERIFIED no change**. `features.index`/`features.toggle` gated `can:feature.manage`; only managers reach toggle. Tests: FeatureFlagTest `lists feature flags (manager only)` + `logs feature_enabled and feature_disabled on toggle`.
+* [✓] FEATURE-06 — Verify superadmin / feature.manage behavior — **VERIFIED no change**. `feature.manage` holders still blocked when flag off (kill-switch precedence: flag > permission). Tests: FeatureFlagTest `lets a feature.manage holder bypass the off gate` (404 — i.e., flag blocks even managers).
 
 # Phase 7 — Audit Trail
 
