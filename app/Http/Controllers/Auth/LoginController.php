@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
-use Illuminate\Auth\Events\Login;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -91,9 +90,8 @@ class LoginController extends Controller
             ]);
         }
 
-        // ponytail: attempt() may not fire Login event under test session guard; dispatch explicitly so audit is consistent
-        event(new Login('web', $user, $request->boolean('remember')));
-
+        // Login event is dispatched by Auth::attempt() -> LogAuthentication listener.
+        // No manual event dispatch here; double-fire would duplicate the login_success audit row.
         RateLimiter::clear($userKey);
         RateLimiter::clear($throttleKey);
         // Clear any expired lock marker on successful login

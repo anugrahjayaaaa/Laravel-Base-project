@@ -37,12 +37,12 @@
 
 # Phase 1 — Authentication & Account Security
 
-* [ ] AUTH-01 — Verify current authentication flow end-to-end
-* [ ] AUTH-02 — Verify account lock / unlock enforcement
-* [ ] AUTH-03 — Verify password change / reset flow
-* [ ] AUTH-04 — Verify email verification flow
-* [ ] AUTH-05 — Verify login rate limiting and lockout interaction
-* [ ] AUTH-06 — Verify authenticated session lifecycle after login/logout
+* [✓] AUTH-01 — Verify current authentication flow end-to-end — **VERIFIED**. Fix: removed duplicate `login_success` audit caused by manual `event(new Login)` + `Auth::attempt()` both firing Login event (1.2→1 audit row). Tests: AuditTest login_success fires once.
+* [✓] AUTH-02 — Verify account lock / unlock enforcement — **VERIFIED no change**. LoginController enforces locked_until (900s cache window + 15m DB lock) and audit-logs `account_locked_auto`. Verified previously (phase 1). No code fix needed.
+* [✓] AUTH-03 — Verify password change / reset flow — **VERIFIED no change**. Web ForgotPasswordController + ProfileController::changePassword both audited (`password_reset_sent`, `password_changed`). No code fix needed.
+* [✓] AUTH-04 — Verify email verification flow — **VERIFIED no change**. Signed-URL verification (verify action), `email_verified` audit via LogAuthentication listener. No code fix needed.
+* [✓] AUTH-05 — Verify login rate limiting and lockout interaction — **VERIFIED no change**. Middleware throttle:10,15 (10/min burst) + LoginController RateLimiter 5 attempts/15m account lockout. No code fix needed.
+* [✓] AUTH-06 — Verify authenticated session lifecycle after login/logout — **VERIFIED**. Fix: added regression test `logout fires logout audit and invalidates the session` covering logout audit emit + session invalidated (dashboard redirect to login). No code change (logout event already fires LogAuthentication listener + session invalidate/regenerate present).
 
 # Phase 2 — Authorization / RBAC
 
@@ -257,4 +257,6 @@ Pending.
 
 | Date       | Task | Status | Summary                                                  |
 | ---------- | ---- | ------ | -------------------------------------------------------- |
-| YYYY-MM-DD | INIT | OPEN   | Tracker refreshed against latest `feature/general-fixes` |
+| YYYY-MM-DD | INIT | OPEN   | Tracker initialized                                                       |
+| 2026-09-10 | P1   | VERIFIED | AUTH-01: removed duplicate login_success audit (manual event double-fire) |
+| 2026-09-10 | P1   | VERIFIED | AUTH-06: added logout audit + session invalidation regression test          |

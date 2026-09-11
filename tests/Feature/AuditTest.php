@@ -39,6 +39,32 @@ it('logs a real login event', function () {
     expect(Activity::where('description', 'login_success')->exists())->toBeTrue();
 });
 
+it('login_success audit fires exactly once (no double-log from attempt + manual event)', function () {
+    auth()->logout();
+    $countBefore = Activity::where('description', 'login_success')->count();
+
+    $this->post(route('login.store'), [
+        'identifier' => 'superadmin',
+        'password' => '#Password123',
+    ])->assertRedirect(route('dashboard'));
+
+    $countAfter = Activity::where('description', 'login_success')->count();
+    expect($countAfter)->toBe($countBefore + 1);
+});
+
+it('logout fires logout audit and invalidates the session', function () {
+    auth()->logout();
+    $this->post(route('login.store'), [
+        'identifier' => 'superadmin',
+        'password' => '#Password123',
+    ])->assertRedirect(route('dashboard'));
+
+    expect(Activity::where('description', 'logout')->exists())->toBeFalse();
+    $this->post(route('logout'))->assertRedirect('/');
+    expect(Activity::where('description', 'logout')->exists())->toBeTrue();
+    $this->get(route('dashboard'))->assertRedirect(route('login'));
+});
+
 it('records old and new values on user update (no password)', function () {
     $u = User::factory()->create(['username' => 'audupd'.time()]);
     $oldName = $u->name;
