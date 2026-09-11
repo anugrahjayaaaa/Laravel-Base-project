@@ -128,13 +128,13 @@
 
 # Phase 11 — Translation / i18n
 
-* [ ] I18N-01 — Verify translation source consistency
-* [ ] I18N-02 — Verify EN / ID coverage
-* [ ] I18N-03 — Verify UI vs message namespace usage
-* [ ] I18N-04 — Verify runtime database translation overrides
-* [ ] I18N-05 — Verify web locale persistence
-* [ ] I18N-06 — Verify API locale behavior
-* [ ] I18N-07 — Verify missing-key / fallback behavior
+* [✓] I18N-01 — Verify translation source consistency — **VERIFIED no change**. `lang/{en,id}/{ui,messages,validation}.php` are source of truth; `LanguageLineSeeder` sync file→DB (idempotent key cleanup, nested validation keys skipped). Tests: TranslationTest `lists translations for admin`.
+* [✓] I18N-02 — Verify EN / ID coverage — **VERIFIED no change**. Both `en` and `id` lang files + DB rows exist for ui/messages groups; validation handled by native Laravel loader. Tests: TranslationTest `keeps en and id locales structurally consistent`, LocaleTest `updates locale`.
+* [✓] I18N-03 — Verify UI vs message namespace usage — **VERIFIED no change**. `ui()` → ui.php (UI terminology), `__('messages.*')` → messages.php (feedback); no cross-namespace leakage. Tests: TranslationTest `updates a translation value and reflects in __()`.
+* [✓] I18N-04 — Verify runtime database translation overrides — **VERIFIED no change**. TranslationController + LanguageLine (spatie) override DB; `__()`/`ui()` auto-fallback file→DB. Tests: TranslationTest `updates a translation value...`.
+* [✓] I18N-05 — Verify web locale persistence — **VERIFIED no change**. `LocaleController::update` sets `session('locale')`; `SetLocale` middleware reads session + `app()->setLocale()` before request; locale persists across session. Tests: LocaleTest `updates locale and persists in session`.
+* [-] I18N-06 — Verify API locale behavior — **DEFERRED**. API layer (Sanctum) deferred entirely (QA tracker §8 API). No code exists to verify; fail-closed default applies.
+* [✓] I18N-07 — Verify missing-key / fallback behavior — **VERIFIED no change**. spatie-translation-loader: missing key falls back file→DB→`null` key (no exception); locale parity test asserts `id`/`en` structural match incl. placeholders. Tests: TranslationTest structural parity.
 
 # Phase 12 — Database & Data Integrity
 
@@ -257,4 +257,5 @@ Pending.
 | 2026-09-11 | P1   | VERIFIED | SESSION-01/03/05: session regen, lock invalidation, account_locked_auto audit regression |
 | 2026-09-11 | P1   | FIXED    | AUDIT-08: UserObserver/RoleObserver forceDeleted now emit non-HTTP fallback audit (was no-op) |
 | 2026-09-11 | P2   | VERIFIED | AUDIT-06: audit index causer filter + pagination regression test |
-| 2026-09-11 | P1   | FIXED    | SETTING-01: SettingsController update 500 on nullable default_plan/default_role — added ?? null (fix), SettingsRegistrationTest added
+| 2026-09-11 | P1   | FIXED    | SETTING-01: SettingsController update 500 on nullable default_plan/default_role — added ?? null (fix), SettingsRegistrationTest added |
+| 2026-09-11 | P2   | VERIFIED | I18N-01..07: i18n dual-source + DB override + locale persistence verified (I18N-06 DEFERRED to API)
