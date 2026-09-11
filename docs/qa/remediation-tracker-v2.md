@@ -111,11 +111,11 @@
 * [✓] SETTING-05 — Verify registration security and validation — **VERIFIED no change**. `RegisterRequest` enforces strong password (min 12 + upper/lower/number/symbol regex), unique `username`/`email`/`phone`, confirmed. Tests: SettingsRegistrationTest `SETTING-05: register validation rejects weak passwords and duplicates`.
 # Phase 9 — Notifications
 
-* [ ] NOTIFY-01 — Verify authentication notification lifecycle
-* [ ] NOTIFY-02 — Verify unread/read behavior
-* [ ] NOTIFY-03 — Verify mark-all-read behavior
-* [ ] NOTIFY-04 — Verify notification authorization
-* [ ] NOTIFY-05 — Verify notification backfill / cleanup behavior
+* [✓] NOTIFY-01 — Verify authentication notification lifecycle — **VERIFIED no change**. `AuditNotification` notifikasi sistem (login_success/logout) via native Laravel `Notifiable`; `notifications:backfill` command merealisasikan activity log ke notifikasi. Tests: NotificationPageTest `backfill command copies auth activity into notifications`.
+* [✓] NOTIFY-02 — Verify unread/read behavior — **VERIFIED no change**. `NotificationController::index` mark `unreadNotifications` read on view + paginate(20). Tests: NotificationPageTest `marks notifications read on view (unread count drops to 0)`.
+* [✓] NOTIFY-03 — Verify mark-all-read behavior — **VERIFIED no change**. `index` emits `notification_mark_all_read` audit via `auditAction('notification_mark_all_read')`. Tests: NotificationPageTest page-view + audit count.
+* [✓] NOTIFY-04 — Verify notification authorization — **VERIFIED no change**. `notifications.index` gated `feature:audit` + `can:audit.view` middleware (403 without). Tests: NotificationPageTest `denies notifications page to user without audit.view`.
+* [✓] NOTIFY-05 — Verify notification backfill / cleanup behavior — **VERIFIED no change**. `notifications:backfill` artisan command copies `Activity` → `Notification`; idempotent via `notifiable_id`/`key`. Tests: NotificationPageTest `backfill command copies auth activity into notifications`.
 
 # Phase 10 — Logs & Observability
 
@@ -258,4 +258,5 @@ Pending.
 | 2026-09-11 | P1   | FIXED    | AUDIT-08: UserObserver/RoleObserver forceDeleted now emit non-HTTP fallback audit (was no-op) |
 | 2026-09-11 | P2   | VERIFIED | AUDIT-06: audit index causer filter + pagination regression test |
 | 2026-09-11 | P1   | FIXED    | SETTING-01: SettingsController update 500 on nullable default_plan/default_role — added ?? null (fix), SettingsRegistrationTest added |
-| 2026-09-11 | P2   | VERIFIED | I18N-01..07: i18n dual-source + DB override + locale persistence verified (I18N-06 DEFERRED to API)
+| 2026-09-11 | P2   | VERIFIED | I18N-01..07: i18n dual-source + DB override + locale persistence verified (I18N-06 DEFERRED to API) |
+| 2026-09-11 | P2   | VERIFIED | NOTIFY-01..05: auth notification lifecycle, read/mark-all-read, authz, backfill verified via NotificationPageTest (4/4)
