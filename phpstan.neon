@@ -1,0 +1,22 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - app/
+        - config/
+        - database/
+        - routes/
+    excludePaths:
+        - vendor/*
+        - node_modules/*
+        - storage/*
+        - bootstrap/cache/*
+    # Incremental: baseline locks existing violations; new code must be clean.
+    # Run: vendor/bin/phpstan analyse --generate-baseline
+    # Then increase level gradually.
+    parallel:
+        maximumNumberOfProcesses: 4
+    tmpDir: storage/framework/phpstan

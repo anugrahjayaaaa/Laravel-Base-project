@@ -3,7 +3,7 @@
     <div class="container-fluid">
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link" href="#" data-lte-toggle="sidebar" role="button" title="Toggle sidebar">
+                <a class="nav-link" href="#" data-lte-toggle="sidebar" role="button" title="{{ ui('toggle_sidebar') }}">
                     <i class="bi bi-list fs-4"></i>
                 </a>
             </li>
@@ -23,7 +23,7 @@
         <ul class="navbar-nav ms-auto align-items-center">
             {{-- Theme toggle --}}
             <li class="nav-item">
-                <button class="btn btn-link nav-link px-2" id="theme-toggle" type="button" title="Toggle light/dark" aria-label="Toggle theme">
+                <button class="btn btn-link nav-link px-2" id="theme-toggle" type="button" title="{{ ui('toggle_theme') }}" aria-label="{{ ui('toggle_theme') }}">
                     <i class="bi bi-moon-stars fs-5" id="theme-icon"></i>
                 </button>
             </li>
@@ -39,7 +39,7 @@
                     @endif
                 </a>
                 <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg py-0" style="width:320px">
-                    <span class="dropdown-item dropdown-header d-flex justify-content-between"><span>Recent activity</span><span class="badge bg-primary-subtle text-primary">{{ $notifications['items']->count() }}</span></span>
+                    <span class="dropdown-item dropdown-header d-flex justify-content-between"><span>{{ ui('recent_activity') }}</span><span class="badge bg-primary-subtle text-primary">{{ $notifications['items']->count() }}</span></span>
                     <div class="dropdown-divider my-0"></div>
                     <div style="max-height:280px;overflow:auto">
                     @forelse ($notifications['items'] as $n)
@@ -53,11 +53,11 @@
                             </div>
                         </a>
                     @empty
-                        <span class="dropdown-item text-muted">No activity yet.</span>
+                        <span class="dropdown-item text-muted">{{ ui('no_activity_yet') }}</span>
                     @endforelse
                     </div>
                     <div class="dropdown-divider my-0"></div>
-                    <a href="{{ route('notifications.index') }}" class="dropdown-item dropdown-footer text-center text-primary">View all notifications</a>
+                    <a href="{{ route('notifications.index') }}" class="dropdown-item dropdown-footer text-center text-primary">{{ ui('view_all_notifications') }}</a>
                 </div>
             </li>
 
@@ -78,8 +78,13 @@
                         </div>
                     </li>
                     <li><hr class="dropdown-divider my-0"></li>
-                    <li><a href="{{ route('profile.show') }}" class="dropdown-item py-2"><i class="bi bi-person me-2"></i> Profile</a></li>
-                    <li><a href="{{ route('sessions.index') }}" class="dropdown-item py-2"><i class="bi bi-pc-display me-2"></i> {{ __('messages.sessions') }}</a></li>
+                    <li><a href="{{ route('profile.show') }}" class="dropdown-item py-2"><i class="bi bi-person me-2"></i> {{ ui('profile') }}</a></li>
+                    @can('session.view')
+                    <li><a href="{{ route('sessions.index') }}" class="dropdown-item py-2"><i class="bi bi-pc-display me-2"></i> {{ ui('sessions') }}</a></li>
+                    @endcan
+                    @can('feature.manage')
+                    <li><a href="{{ route('settings.system') }}" class="dropdown-item py-2"><i class="bi bi-gear me-2"></i> {{ ui('system_settings') }}</a></li>
+                    @endcan
                     <li><hr class="dropdown-divider my-0"></li>
                     <li class="dropdown-item-text pb-1">
                         <div class="text-muted small text-uppercase px-2">{{ __('messages.language') }}</div>
@@ -100,7 +105,7 @@
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button class="dropdown-item py-2 text-danger w-100 text-start"><i class="bi bi-box-arrow-right me-2"></i> Logout</button>
+                            <button class="dropdown-item py-2 text-danger w-100 text-start"><i class="bi bi-box-arrow-right me-2"></i> {{ ui('logout') }}</button>
                         </form>
                     </li>
                 </ul>

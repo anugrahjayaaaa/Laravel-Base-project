@@ -42,7 +42,7 @@
                         <div class="d-flex align-items-center gap-2">
                             <span class="avatar avatar-sm rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:32px;height:32px">{{ strtoupper(substr($user->name,0,1)) }}</span>
                             <div>
-                                <div class="fw-medium">{{ $user->name }}</div>
+                                <span class="fw-medium">{{ $user->name }}</span>
                                 @if($user->trashed())<span class="badge text-bg-danger">{{ ui('deleted') }}</span>@endif
                             </div>
                         </div>
@@ -73,24 +73,28 @@
                                 :forceDelete="$user->trashed() && auth()->user()->can('user.force-delete') ? route('users.forceDelete', $user->id) : null" />
                             @if (!$user->trashed() && $user->id !== auth()->id() && auth()->user()->can('user.edit'))
                             <form method="POST" action="{{ route('users.reset-password', $user) }}" class="d-inline">@csrf
-                                <button type="submit" class="btn btn-sm btn-light border rounded-2" data-bs-toggle="tooltip" data-bs-title="Send reset password" aria-label="Send reset password" style="min-width:38px">
+                                <button type="submit" class="btn btn-sm btn-light border rounded-2" data-bs-toggle="tooltip" data-bs-title="{{ ui('send_reset_email') }}" aria-label="{{ ui('send_reset_email') }}" style="min-width:38px">
                                     <i class="bi bi-envelope"></i>
                                 </button>
                             </form>
                             @endif
                             @if (!$user->trashed() && $user->id !== auth()->id() && auth()->user()->can('user.lock'))
                             @if ($user->isLocked())
-                            <form method="POST" action="{{ route('users.unlock', $user) }}" class="d-inline">@csrf
-                                <button type="submit" class="btn btn-sm btn-light border rounded-2 text-warning" data-bs-toggle="tooltip" data-bs-title="Unlock account" aria-label="Unlock account" style="min-width:38px">
+                                <button type="button" class="btn btn-sm btn-light border rounded-2 text-warning"
+                                    data-bs-toggle="modal" data-bs-target="#lockUserModal"
+                                    data-action="{{ route('users.unlock', $user) }}"
+                                    data-label="{{ ui('confirm_unlock') }}"
+                                    data-bs-title="{{ ui('unlock') }}" aria-label="{{ ui('unlock') }}" style="min-width:38px">
                                     <i class="bi bi-unlock-fill"></i>
                                 </button>
-                            </form>
                             @else
-                            <form method="POST" action="{{ route('users.lock', $user) }}" class="d-inline">@csrf
-                                <button type="submit" class="btn btn-sm btn-light border rounded-2 text-danger" data-bs-toggle="tooltip" data-bs-title="Lock account" aria-label="Lock account" style="min-width:38px">
+                                <button type="button" class="btn btn-sm btn-light border rounded-2 text-danger"
+                                    data-bs-toggle="modal" data-bs-target="#lockUserModal"
+                                    data-action="{{ route('users.lock', $user) }}"
+                                    data-label="{{ ui('confirm_lock') }}"
+                                    data-bs-title="{{ ui('lock') }}" aria-label="{{ ui('lock') }}" style="min-width:38px">
                                     <i class="bi bi-lock-fill"></i>
                                 </button>
-                            </form>
                             @endif
                             @endif
                         </div>
@@ -108,4 +112,5 @@
 {{ $users->links() }}
 @include('partials.modals.delete-modal')
 @include('partials.modals.force-delete-modal')
+@include('partials.modals.lock-user-modal')
 @endsection

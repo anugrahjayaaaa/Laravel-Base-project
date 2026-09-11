@@ -3,6 +3,7 @@
 use App\Models\Role;
 use App\Models\User;
 use Laravel\Pennant\Feature;
+use Spatie\Activitylog\Models\Activity;
 
 beforeEach(function () {
     $this->seed();
@@ -84,4 +85,21 @@ it('shows a feature-off menu item to a feature.manage holder', function () {
     $this->actingAs($manager)->get(route('dashboard'))
         ->assertOk()
         ->assertDontSee('/users');
+});
+
+it('logs feature_enabled and feature_disabled on toggle', function () {
+    $manager = makeUserWith([], true);
+    $this->actingAs($manager);
+
+    $this->post(route('features.toggle', 'users'), ['enabled' => '0'])
+        ->assertRedirect(route('features.index'));
+    expect(Activity::where('causer_id', $manager->id)
+        ->where('description', 'feature_disabled')
+        ->whereRaw('JSON_EXTRACT(properties, "$.feature") = ?', ['users'])->exists())->toBeTrue();
+
+    $this->post(route('features.toggle', 'users'), ['enabled' => '1'])
+        ->assertRedirect(route('features.index'));
+    expect(Activity::where('causer_id', $manager->id)
+        ->where('description', 'feature_enabled')
+        ->whereRaw('JSON_EXTRACT(properties, "$.feature") = ?', ['users'])->exists())->toBeTrue();
 });

@@ -50,5 +50,5 @@ php artisan migrate --seed
 
 ## Open items (not v1)
 - MFA/2FA, SMS OTP, in-app notifications, file-upload module.
-- Subscriber-side RBAC enforcement: `can_create_roles` + `allowed_permissions` gate at `RoleController`/`PermissionController` (doc licensing §11.4). Currently open — plan limits are NOT enforced when subscribers create roles/permissions. Add when subscriber RBAC is needed.
-- Midtrans integration: swap `billing.fake=true` dummy checkout for real PG (Midtrans Snap + webhook). See `licensing-and-billing.md` §6.
+- Subscriber-side RBAC enforcement: `role.create`/`role.edit` permissions gate role creation via `RoleStoreRequest`/`RoleUpdateRequest` `authorize()`. `allowed_permissions` limits which permissions a subscriber may assign — enforced in `RoleController::filterPermissions()` (web) and `RoleApiController::filterPermissions()` (API). `role.*` / `permission.*` management permissions are exempt from the Plan boundary Gate check (governed by Role assignment). Free plan subscribers have empty `allowed_permissions` → `filterPermissions` denies all → cannot assign any permissions. Super-admin bypasses Plan entirely via `BypassService::isSuperAdmin()` in the Gate `before` callback (see ADR-0011). See [licensing-and-billing.md](./base/features/licensing-and-billing.md) §11.1-11.4 and [rbac.md](./base/features/rbac.md).
+- Midtrans integration: swap `billing.fake=true` dummy checkout for real PG (Midtrans Snap + webhook). See [licensing-and-billing.md](./base/features/licensing-and-billing.md) §6.

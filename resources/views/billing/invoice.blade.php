@@ -29,7 +29,7 @@
 
     <table>
         <thead>
-            <tr><th>{{ __('messages.plan') }}</th><th>{{ __('messages.period') }}</th><th>{{ __('messages.amount') }}</th></tr>
+            <tr><th>{{ ui('plan') }}</th><th>{{ __('messages.period') }}</th><th>{{ ui('amount') }}</th></tr>
         </thead>
         <tbody>
             <tr>

@@ -2,10 +2,12 @@
 
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\LogHttpErrors;
+use App\Http\Middleware\RegistrationEnabled;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetApiLocale;
 use App\Http\Middleware\SetLocale;
 use App\Providers\EventServiceProvider;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(append: [SetApiLocale::class]);
         $middleware->alias([
             'feature' => EnsureFeatureEnabled::class,
+            'registration.enabled' => RegistrationEnabled::class,
         ]);
     })
     ->withProviders([
@@ -39,4 +42,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // ponytail: global unique-constraint safety net for SQLite/MySQL race conditions.
+        // Not a substitute for per-field mapping; add per-field handling if 422 accuracy matters.
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($e instanceof QueryException && str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
+                return redirect()->back()->withErrors(['email' => __('messages.email_already_taken')])->withInput();
+            }
+
+            return null;
+        });
     })->create();

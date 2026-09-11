@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Setting;
 use App\Models\User;
-use App\Services\LicenseService;
 use App\Services\PlanService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -15,10 +15,9 @@ it('checkout route exists and method is reachable (dummy mode)', function () {
     $user = User::where('email', 'admin@laravel-base.local')->first();
     $this->actingAs($user);
 
-    Plan::create([
-        'slug' => 'pro', 'name' => 'Pro', 'price_monthly' => 99000,
+    Plan::firstOrCreate(['slug' => 'pro'], ['name' => 'Pro', 'price_monthly' => 99000,
         'is_active' => true, 'billing_period' => 'monthly',
-        'limits' => ['max_members' => 5], 'features' => ['kanban'],
+        'limits' => ['max_members' => 5], 'features' => ['api-tokens'],
     ]);
 
     // form posts plan_slug (as plans/index.blade does)
@@ -26,7 +25,7 @@ it('checkout route exists and method is reachable (dummy mode)', function () {
         ->assertRedirect(route('billing.index'));
 
     // dummy mode should have paid immediately
-    $payments = \App\Models\Payment::where('plan_slug', 'pro')->get();
+    $payments = Payment::where('plan_slug', 'pro')->get();
     expect($payments->count())->toBe(1)
         ->and($payments->first()->status)->toBe('paid');
 });
@@ -50,10 +49,9 @@ it('webhook rejects invalid signature (403)', function () {
 
 it('webhook with valid signature completes payment', function () {
     config(['billing.fake' => true, 'billing.webhook_secret' => 'test-secret']);
-    Plan::create([
-        'slug' => 'pro', 'name' => 'Pro', 'price_monthly' => 99000,
+    Plan::firstOrCreate(['slug' => 'pro'], ['name' => 'Pro', 'price_monthly' => 99000,
         'is_active' => true, 'billing_period' => 'monthly',
-        'limits' => ['max_members' => 5], 'features' => ['kanban'],
+        'limits' => ['max_members' => 5], 'features' => ['api-tokens'],
     ]);
 
     $this->post(route('billing.webhook'), [
@@ -62,20 +60,22 @@ it('webhook with valid signature completes payment', function () {
         'X-Billing-Signature' => 'test-secret',
     ])->assertOk();
 
-    expect(\App\Models\Payment::where('gateway_ref', 'order-test-1')->first()->status)->toBe('paid');
+    expect(Payment::where('gateway_ref', 'order-test-1')->first()->status)->toBe('paid');
 });
 
 it('tampered plan setting reverts to free features (§10.1)', function () {
     // client edits settings.active_plan directly without valid license
-    \App\Models\Setting::set('active_plan', 'pro');
-    \App\Models\Setting::set('license_key', null);
+    Setting::set('active_plan', 'pro');
+    Setting::set('license_key', null);
 
-    Plan::create(['slug' => 'pro', 'name' => 'Pro', 'price_monthly' => 99000,
-        'is_active' => true, 'billing_period' => 'monthly',
-        'limits' => ['max_members' => 5], 'features' => ['kanban']]);
+    Plan::firstOrCreate(['slug' => 'pro'], [
+        'name' => 'Pro', 'price_monthly' => 99000, 'is_active' => true,
+        'billing_period' => 'monthly',
+        'limits' => ['max_members' => 5], 'features' => ['api-tokens'],
+    ]);
 
     // no activated license -> PlanService refuses paid features
-    expect(PlanService::for()->can('kanban'))->toBeFalse();
+    expect(PlanService::for()->can('api-tokens'))->toBeFalse();
     expect(Setting::get('active_plan'))->toBe('pro'); // setting persists but features locked
 });
 
@@ -83,8 +83,23 @@ it('dashboard renders license badge', function () {
     $user = User::where('email', 'admin@laravel-base.local')->first();
     $this->actingAs($user);
 
+    // Global beforeEach activates enterprise license
     $this->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('No license')
-        ->assertSee('Free plan');
+        ->assertSee('License')
+        ->assertSee('Lifetime');
+});
+
+it('dashboard shows recent activity feed', function () {
+    $user = User::where('email', 'admin@laravel-base.local')->first();
+    $this->actingAs($user);
+
+    activity()
+        ->causedBy($user)
+        ->withProperties(['model' => 'User'])
+        ->log('login');
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee(ui('recent_activity'));
 });

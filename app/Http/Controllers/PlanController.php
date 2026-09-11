@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Plan\PlanRequest;
 use App\Models\Permission;
 use App\Models\Plan;
+use App\Services\PlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -27,7 +28,8 @@ class PlanController extends Controller
 
     public function store(PlanRequest $request): RedirectResponse
     {
-        Plan::create($request->toPlanData());
+        $plan = Plan::create($request->toPlanData());
+        PlanService::syncPermissionsForPlan($plan);
 
         return redirect()->route('plans.index')->with('success', __('messages.plan_created'));
     }
@@ -43,6 +45,7 @@ class PlanController extends Controller
     public function update(PlanRequest $request, Plan $plan): RedirectResponse
     {
         $plan->update($request->toPlanData());
+        PlanService::syncPermissionsForPlan($plan);
 
         return redirect()->route('plans.index')->with('success', __('messages.plan_updated'));
     }

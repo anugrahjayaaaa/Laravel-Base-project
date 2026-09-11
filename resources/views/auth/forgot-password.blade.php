@@ -18,9 +18,10 @@
             <form method="POST" action="{{ route('password.email') }}">
                 @csrf
                 <div class="input-group mb-3">
-                    <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" placeholder="{{ ui('email') }}" value="{{ old('email') }}" required autofocus>
-                    @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <input type="email" name="email" id="email" class="form-control @error('email') is-invalid @enderror" placeholder="{{ ui('email') }}" value="{{ old('email') }}" required autofocus aria-describedby="email-error" @error('email') aria-invalid="true" @enderror>
+                    <label for="email" class="sr-only">{{ ui('email') }}</label>
                     <div class="input-group-text"><i class="bi bi-envelope"></i></div>
+                    @error('email')<div id="email-error" class="invalid-feedback d-block w-100" role="alert" aria-live="polite">{{ $message }}</div>@enderror
                 </div>
                 <div class="row">
                     <div class="col-12">

@@ -28,7 +28,7 @@ it('SetLocale middleware applies session locale to the app', function () {
     (new SetLocale)->handle($request, function ($req) use (&$called) {
         $called = true;
         expect(App::getLocale())->toBe('id');
-        expect(__('messages.users'))->toBe('Pengguna');
+        expect(ui('users'))->toBe('Pengguna');
     });
     expect($called)->toBeTrue();
 });
@@ -90,7 +90,7 @@ it('returns localized API message end-to-end (login + logout)', function () {
 
     $login = $this->postJson('/api/v1/login', [
         'identifier' => $u->username,
-        'password' => 'Admin@base12345', // seeded default
+        'password' => '#Password123', // seeded default
         'device_name' => 'e2e-test',
     ])->assertOk();
 
@@ -116,14 +116,14 @@ it('returns English API message without X-Locale', function () {
 
 it('reads translations from database (language_lines)', function () {
     // seeded by DatabaseSeeder -> LanguageLineSeeder
-    $line = LanguageLine::where('group', 'messages')->where('key', 'users')->first();
+    $line = LanguageLine::where('group', 'ui')->where('key', 'users')->first();
     expect($line)->not->toBeNull();
     expect($line->text)->toBe(['en' => 'Users', 'id' => 'Pengguna']);
 
-    // DB overrides the file: __() returns DB value
+    // DB overrides the file: ui() returns DB value
     Session::put('locale', 'id');
     $request = Request::create('/dashboard');
     (new SetLocale)->handle($request, function ($req) {
-        expect(__('messages.users'))->toBe('Pengguna');
+        expect(ui('users'))->toBe('Pengguna');
     });
 });

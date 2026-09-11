@@ -1,5 +1,5 @@
 @extends('layouts.app')
 @section('content')
-<h3>New Permission</h3>
+<h3>{{ ui('new_permission') }}</h3>
 @include('access.permissions.edit')
 @endsection

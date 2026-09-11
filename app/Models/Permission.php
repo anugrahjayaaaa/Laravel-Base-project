@@ -42,6 +42,7 @@ class Permission extends SpatiePermission
         if (in_array(Str::plural($prefix), $flags, true)) {
             return Str::plural($prefix);
         }
+
         return $prefix;
     }
 }

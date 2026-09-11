@@ -1,7 +1,9 @@
 *.log
 .DS_Store
-.env
-.env.backup
+/.env
+/.env.testing
+/.env.backup
+/storage/framework/phpstan/
 .env.production
 .phpactor.json
 .phpunit.result.cache

@@ -18,16 +18,18 @@
             <form method="POST" action="{{ route('login.store') }}">
                 @csrf
                 <div class="input-group mb-3">
-                    <input type="text" name="identifier" class="form-control @error('identifier') is-invalid @enderror" placeholder="{{ ui('email_or_username') }}" value="{{ old('identifier') }}" required autofocus>
-                    @error('identifier')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <input type="text" name="identifier" id="identifier" class="form-control @error('identifier') is-invalid @enderror" placeholder="{{ ui('email_or_username') }}" value="{{ old('identifier') }}" required autofocus aria-describedby="identifier-error" @error('identifier') aria-invalid="true" @enderror>
+                    <label for="identifier" class="sr-only">{{ ui('email_or_username') }}</label>
                     <div class="input-group-text"><i class="bi bi-person"></i></div>
+                    @error('identifier')<div id="identifier-error" class="invalid-feedback d-block w-100" role="alert" aria-live="polite">{{ $message }}</div>@enderror
                 </div>
                 <div class="input-group mb-3">
-                    <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" placeholder="{{ ui('password') }}" required>
-                    @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <button type="button" class="input-group-text" id="toggle-password" aria-label="Show password" style="cursor:pointer">
+                    <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" placeholder="{{ ui('password') }}" required aria-describedby="password-error" @error('password') aria-invalid="true" @enderror>
+                    <label for="password" class="sr-only">{{ ui('password') }}</label>
+                    <button type="button" class="input-group-text" id="toggle-password" aria-label="{{ ui('show_password') }}" style="cursor:pointer">
                         <i class="bi bi-eye" id="password-icon"></i>
                     </button>
+                    @error('password')<div id="password-error" class="invalid-feedback d-block w-100 mt-1" role="alert" aria-live="polite">{{ $message }}</div>@enderror
                 </div>
                 <div class="row">
                     <div class="col-8">
@@ -45,6 +47,12 @@
             <p class="mb-0 mt-2">
                 <a href="{{ route('password.request') }}">{{ ui('forgot_your_password') }}</a>
             </p>
+
+            @if(\App\Models\Setting::get('registration_enabled', false))
+                <p class="mb-0 mt-2 text-center">
+                    <a href="{{ route('register') }}" class="text-center">{{ ui('no_account_register') }}</a>
+                </p>
+            @endif
         </div>
     </div>
 </div>
@@ -60,7 +68,7 @@
             const show = pwd.type === 'password';
             pwd.type = show ? 'text' : 'password';
             icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
-            btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+            btn.setAttribute('aria-label', show ? __('ui.hide_password') : __('ui.show_password'));
         });
     })();
 </script>

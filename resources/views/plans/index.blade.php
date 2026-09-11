@@ -5,7 +5,7 @@
 <p class="text-muted">{{ ui('plans_intro') }}</p>
 
 <div class="d-flex justify-content-end mb-2">
-    <a href="{{ route('plans.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> {{ ui('new_plan') }}</a>
+    <a href="{{ route('plans.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> {{ ui('new_plan') }}</a>
 </div>
 
 <div class="card shadow-sm">
@@ -33,23 +33,17 @@
                         @else
                             <span class="badge text-bg-secondary">{{ ui('inactive') }}</span>
                         @endif
-                        <span class="badge text-bg-light">{{ ui('period_'.$plan->billing_period) }}</span>
+                        <span class="badge text-bg-light">{{ ui('period_'.$plan->billing_period) ?: ucfirst($plan->billing_period) }}</span>
                     </td>
                     <td class="text-end">
-                        <a href="{{ route('plans.edit', $plan) }}" class="btn btn-sm btn-light border">{{ ui('edit') }}</a>
+                        <x-action-buttons :edit="route('plans.edit', $plan)" :delete="route('plans.destroy', $plan)" />
                         @if($plan->price_monthly > 0)
                         <form method="POST" action="{{ route('billing.checkout') }}" class="d-inline">
                             @csrf
                             <input type="hidden" name="plan_slug" value="{{ $plan->slug }}">
-                            <button class="btn btn-sm btn-primary">{{ ui('subscribe') }}</button>
+                            <button class="btn btn-primary"><i class="bi bi-bell"></i> {{ ui('subscribe') }}</button>
                         </form>
                         @endif
-                        @unless($plan->slug === 'free')
-                        <form method="POST" action="{{ route('plans.destroy', $plan) }}" class="d-inline" onsubmit="return confirm('{{ ui('confirm_delete') }}');">
-                            @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger">{{ ui('delete') }}</button>
-                        </form>
-                        @endunless
                     </td>
                 </tr>
                 @empty

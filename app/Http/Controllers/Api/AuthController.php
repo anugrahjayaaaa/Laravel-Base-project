@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginApiRequest;
 use App\Http\Requests\Auth\PasswordChangeRequest;
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    use Auditable;
+
     private function resolveLoginField(string $identifier): string
     {
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
@@ -43,8 +46,9 @@ class AuthController extends Controller
 
         $user = User::where($field, $identifier)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (! $user || $user->isLocked() || ! Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 900);
+
             throw ValidationException::withMessages(['identifier' => __('messages.invalid_credentials')]);
         }
 
@@ -78,7 +82,7 @@ class AuthController extends Controller
     public function changePassword(PasswordChangeRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $request->user()->update(['password' => bcrypt($data['password'])]);
+        $request->user()->update(['password' => Hash::make($data['password'])]);
         $request->user()->tokens()->delete(); // revoke all mobile tokens
 
         return response()->json(['message' => __('messages.password_changed')]);

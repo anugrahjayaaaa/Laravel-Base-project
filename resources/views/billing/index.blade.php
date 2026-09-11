@@ -23,7 +23,7 @@
                         'lifetime', 'manual' => 'period_lifetime',
                         default => 'period_monthly',
                     })
-                    <p class="text-muted">{{ __('messages.billing_period') }}: {{ __('messages.'.$periodKey) }}</p>
+                    <p class="text-muted">{{ ui('billing_period') }}: {{ ui($periodKey) }}</p>
                     <p>{{ __('messages.license') }}: <code>{{ $license->license_key }}</code></p>
                     <p>{{ __('messages.expires') }}: {{ $license->expires_at ? $license->expires_at->format('Y-m-d') : __('messages.lifetime') }}</p>
                     <form method="POST" action="{{ route('billing.cancel') }}" class="mt-3">
@@ -32,7 +32,7 @@
                     </form>
                 @else
                     <p class="text-muted">{{ __('messages.no_active_subscription') }}</p>
-                    <a href="{{ route('plans.index') }}" class="btn btn-primary">{{ __('messages.subscribe') }}</a>
+                    <a href="{{ route('plans.index') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> {{ ui('subscribe') }}</a>
                 @endif
             </div>
         </div>
@@ -50,17 +50,17 @@
     </div>
 </div>
 
-<h5 class="mt-4">{{ __('messages.payment_history') }}</h5>
+<h5 class="mt-4">{{ ui('payment_history') }}</h5>
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead>
                 <tr>
-                    <th>{{ __('messages.invoice') }}</th>
-                    <th>{{ __('messages.plan') }}</th>
-                    <th>{{ __('messages.amount') }}</th>
-                    <th>{{ __('messages.status') }}</th>
-                    <th>{{ __('messages.date') }}</th>
+                    <th>{{ ui('invoice') }}</th>
+                    <th>{{ ui('plan') }}</th>
+                    <th>{{ ui('amount') }}</th>
+                    <th>{{ ui('status') }}</th>
+                    <th>{{ ui('date') }}</th>
                     <th></th>
                 </tr>
             </thead>
@@ -78,7 +78,7 @@
                         <td>{{ $p->created_at->format('Y-m-d') }}</td>
                         <td>
                             @if($p->isPaid())
-                                <a href="{{ route('billing.invoice', $p) }}" class="btn btn-sm btn-outline-secondary">{{ __('messages.download') }}</a>
+                                <a href="{{ route('billing.invoice', $p) }}" class="btn btn-sm btn-outline-secondary">{{ ui('download') }}</a>
                             @endif
                         </td>
                     </tr>

@@ -8,81 +8,120 @@
     <div class="sidebar-wrapper">
         <nav class="mt-3 sidebar-nav">
             <ul class="nav sidebar-menu nav-indent flex-column" data-lte-toggle="treeview" data-accordion="false">
-                <li class="nav-header">{{ __('messages.main_menu') }}</li>
+                <li class="nav-header">{{ ui('main_menu') }}</li>
                 <li class="nav-item">
-                    <a href="{{ route('dashboard') }}" data-menu-text="{{ __('messages.dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                        <i class="nav-icon bi bi-speedometer2"></i> <span>{{ __('messages.dashboard') }}</span>
+                    <a href="{{ route('dashboard') }}" data-menu-text="{{ ui('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                        <i class="nav-icon bi bi-speedometer2"></i> <span>{{ ui('dashboard') }}</span>
                     </a>
                 </li>
 
                 {{-- Access Management --}}
-                @php($amActive = request()->routeIs('users.*','roles.*','permissions.*'))
-                <li class="nav-item {{ $amActive ? 'menu-open' : '' }}">
-                    <a href="#" class="nav-link {{ $amActive ? 'active' : '' }}" aria-expanded="{{ $amActive ? 'true' : 'false' }}"><i class="nav-icon bi bi-shield-lock"></i> <span>{{ __('messages.access_management') }}</span><i class="nav-arrow bi bi-chevron-right"></i></a>
-                    <ul class="nav nav-treeview">
-                        @can('user.view')
-                        @feature('users')
-                        <li class="nav-item"><a href="{{ route('users.index') }}" data-menu-text="{{ __('messages.users') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"><i class="nav-icon bi bi-people"></i> <span>{{ __('messages.users') }}</span></a></li>
-                        @endfeature
-                        @endcan
-                        @can('role.view')
-                        @feature('roles')
-                        <li class="nav-item"><a href="{{ route('roles.index') }}" data-menu-text="{{ __('messages.roles') }}" class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"><i class="nav-icon bi bi-shield"></i> <span>{{ __('messages.roles') }}</span></a></li>
-                        @endfeature
-                        @endcan
-                        @can('permission.view')
-                        @feature('permissions')
-                        <li class="nav-item"><a href="{{ route('permissions.index') }}" data-menu-text="{{ __('messages.permissions') }}" class="nav-link {{ request()->routeIs('permissions.*') ? 'active' : '' }}"><i class="nav-icon bi bi-key"></i> <span>{{ __('messages.permissions') }}</span></a></li>
-                        @endfeature
-                        @endcan
-                    </ul>
-                </li>
+                @php
+                    // Root-cause: hide the whole parent when no child is visible.
+                    // Visibility rule = child menu visible iff permission AND feature flag
+                    // both pass (mirrors the nested @can/@feature on each child below).
+                    // Parent visible = OR of all children. No new permission created.
+                    $amVisible = collect([
+                        ['user.view', 'users'],
+                        ['role.view', 'roles'],
+                        ['permission.view', 'permissions'],
+                    ])->contains(fn ($c) => auth()->user()->can($c[0]) && \Laravel\Pennant\Feature::active($c[1]));
+                @endphp
+                @if ($amVisible)
+                    @php
+                        $amActive = request()->routeIs('users.*','roles.*','permissions.*');
+                        $amClass  = $amActive ? 'menu-open' : '';
+                        $amOn     = $amActive ? 'active' : '';
+                        $amExpand = $amActive ? 'true' : 'false';
+                    @endphp
+                    <li class="nav-item {{ $amClass }}">
+                        <a href="#" class="nav-link {{ $amOn }}" aria-expanded="{{ $amExpand }}"><i class="nav-icon bi bi-shield-lock"></i> <span>{{ ui('access_management') }}</span><i class="nav-arrow bi bi-chevron-right"></i></a>
+                        <ul class="nav nav-treeview">
+                            @can('user.view')
+                            @feature('users')
+                            <li class="nav-item"><a href="{{ route('users.index') }}" data-menu-text="{{ ui('users') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"><i class="nav-icon bi bi-people"></i> <span>{{ ui('users') }}</span></a></li>
+                            @endfeature
+                            @endcan
+                            @can('role.view')
+                            @feature('roles')
+                            <li class="nav-item"><a href="{{ route('roles.index') }}" data-menu-text="{{ ui('roles') }}" class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"><i class="nav-icon bi bi-shield"></i> <span>{{ ui('roles') }}</span></a></li>
+                            @endfeature
+                            @endcan
+                            @can('permission.view')
+                            @feature('permissions')
+                            <li class="nav-item"><a href="{{ route('permissions.index') }}" data-menu-text="{{ ui('permissions') }}" class="nav-link {{ request()->routeIs('permissions.*') ? 'active' : '' }}"><i class="nav-icon bi bi-key"></i> <span>{{ ui('permissions') }}</span></a></li>
+                            @endfeature
+                            @endcan
+                        </ul>
+                    </li>
+                @endif
 
                 {{-- Monitoring --}}
-                @php($monActive = request()->routeIs('audit.*','logs.*') || request()->is('telescope*','periscope*'))
-                <li class="nav-item {{ $monActive ? 'menu-open' : '' }}">
-                    <a href="#" class="nav-link {{ $monActive ? 'active' : '' }}" aria-expanded="{{ $monActive ? 'true' : 'false' }}"><i class="nav-icon bi bi-activity"></i> <span>{{ __('messages.monitoring') }}</span><i class="nav-arrow bi bi-chevron-right"></i></a>
-                    <ul class="nav nav-treeview">
-                        @can('audit.view')
-                        @feature('audit')
-                        <li class="nav-item"><a href="{{ route('audit.index') }}" data-menu-text="{{ __('messages.audit_log') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'active' : '' }}"><i class="nav-icon bi bi-journal-text"></i> <span>{{ __('messages.audit_log') }}</span></a></li>
-                        @endfeature
-                        @endcan
-                        @can('logs.view')
-                        @feature('logs')
-                        <li class="nav-item"><a href="{{ route('logs.index') }}" data-menu-text="{{ __('messages.logs') }}" class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"><i class="nav-icon bi bi-file-earmark-text"></i> <span>{{ __('messages.logs') }}</span></a></li>
-                        @endfeature
-                        @endcan
-                        @can('telescope.view')
-                        @feature('telescope')
-                        <li class="nav-item"><a href="{{ url('/telescope') }}" data-menu-text="{{ __('messages.telescope') }}" target="_blank" rel="noopener noreferrer" class="nav-link {{ request()->is('telescope*') ? 'active' : '' }}"><i class="nav-icon bi bi-binoculars"></i> <span>{{ __('messages.telescope') }}</span></a></li>
-                        @endfeature
-                        @endcan
-                        @can('periscope.view')
-                        @feature('periscope')
-                        <li class="nav-item"><a href="{{ url('/periscope') }}" data-menu-text="{{ __('messages.periscope') }}" target="_blank" rel="noopener noreferrer" class="nav-link {{ request()->is('periscope*') ? 'active' : '' }}"><i class="nav-icon bi bi-funnel"></i> <span>{{ __('messages.periscope') }}</span></a></li>
-                        @endfeature
-                        @endcan
-                    </ul>
-                </li>
+                @php
+                    // Root-cause: hide the whole parent when no child is visible.
+                    // Parent visible = OR of all children (permission AND feature flag).
+                    $monVisible = collect([
+                        ['audit.view', 'audit'],
+                        ['logs.view', 'logs'],
+                        ['telescope.view', 'telescope'],
+                        ['periscope.view', 'periscope'],
+                    ])->contains(fn ($c) => auth()->user()->can($c[0]) && \Laravel\Pennant\Feature::active($c[1]));
+                @endphp
+                @if ($monVisible)
+                    @php
+                        $monActive  = request()->routeIs('audit.*','logs.*') || request()->is('telescope*','periscope*');
+                        $monClass   = $monActive ? 'menu-open' : '';
+                        $monOn      = $monActive ? 'active' : '';
+                        $monExpand  = $monActive ? 'true' : 'false';
+                    @endphp
+                    <li class="nav-item {{ $monClass }}">
+                        <a href="#" class="nav-link {{ $monOn }}" aria-expanded="{{ $monExpand }}"><i class="nav-icon bi bi-activity"></i> <span>{{ ui('monitoring') }}</span><i class="nav-arrow bi bi-chevron-right"></i></a>
+                        <ul class="nav nav-treeview">
+                            @can('audit.view')
+                            @feature('audit')
+                            <li class="nav-item"><a href="{{ route('audit.index') }}" data-menu-text="{{ ui('audit_log') }}" class="nav-link {{ request()->routeIs('audit.*') ? 'active' : '' }}"><i class="nav-icon bi bi-journal-text"></i> <span>{{ ui('audit_log') }}</span></a></li>
+                            @endfeature
+                            @endcan
+                            @can('logs.view')
+                            @feature('logs')
+                            <li class="nav-item"><a href="{{ route('logs.index') }}" data-menu-text="{{ ui('logs') }}" class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}"><i class="nav-icon bi bi-file-earmark-text"></i> <span>{{ ui('logs') }}</span></a></li>
+                            @endfeature
+                            @endcan
+                            @can('telescope.view')
+                            @feature('telescope')
+                            <li class="nav-item"><a href="{{ url('/telescope') }}" data-menu-text="{{ ui('telescope') }}" target="_blank" rel="noopener noreferrer" class="nav-link {{ request()->is('telescope*') ? 'active' : '' }}"><i class="nav-icon bi bi-binoculars"></i> <span>{{ ui('telescope') }}</span></a></li>
+                            @endfeature
+                            @endcan
+                            @can('periscope.view')
+                            @feature('periscope')
+                            <li class="nav-item"><a href="{{ url('/periscope') }}" data-menu-text="{{ ui('periscope') }}" target="_blank" rel="noopener noreferrer" class="nav-link {{ request()->is('periscope*') ? 'active' : '' }}"><i class="nav-icon bi bi-funnel"></i> <span>{{ ui('periscope') }}</span></a></li>
+                            @endfeature
+                            @endcan
+                        </ul>
+                    </li>
+                @endif
 
                 {{-- System / Settings --}}
                 @php($setActive = request()->routeIs('sessions.*','api-tokens.*','features.*','translations.*','plans.*','profile.*'))
                 <li class="nav-item {{ $setActive ? 'menu-open' : '' }}">
-                    <a href="#" class="nav-link {{ $setActive ? 'active' : '' }}" aria-expanded="{{ $setActive ? 'true' : 'false' }}"><i class="nav-icon bi bi-gear"></i> <span>{{ __('messages.settings') }}</span><i class="nav-arrow bi bi-chevron-right"></i></a>
+                    <a href="#" class="nav-link {{ $setActive ? 'active' : '' }}" aria-expanded="{{ $setActive ? 'true' : 'false' }}"><i class="nav-icon bi bi-gear"></i> <span>{{ ui('settings') }}</span><i class="nav-arrow bi bi-chevron-right"></i></a>
                     <ul class="nav nav-treeview">
-                        <li class="nav-item"><a href="{{ route('profile.show') }}" data-menu-text="{{ __('messages.profile') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"><i class="nav-icon bi bi-person"></i> <span>{{ __('messages.profile') }}</span></a></li>
+                        <li class="nav-item"><a href="{{ route('profile.show') }}" data-menu-text="{{ ui('profile') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"><i class="nav-icon bi bi-person"></i> <span>{{ ui('profile') }}</span></a></li>
                         @can('feature.manage')
                         @feature('sessions')
-                        <li class="nav-item"><a href="{{ route('sessions.index') }}" data-menu-text="{{ __('messages.sessions') }}" class="nav-link {{ request()->routeIs('sessions.*') ? 'active' : '' }}"><i class="nav-icon bi bi-pc-display"></i> <span>{{ __('messages.sessions') }}</span></a></li>
+                        <li class="nav-item"><a href="{{ route('sessions.index') }}" data-menu-text="{{ ui('sessions') }}" class="nav-link {{ request()->routeIs('sessions.*') ? 'active' : '' }}"><i class="nav-icon bi bi-pc-display"></i> <span>{{ ui('sessions') }}</span></a></li>
                         @endfeature
                         @endcan
                         @canany(['feature.manage', 'translation.view'])
                         @feature('api-tokens')
-                        <li class="nav-item"><a href="{{ route('api-tokens.index') }}" data-menu-text="{{ __('messages.api_tokens') }}" class="nav-link {{ request()->routeIs('api-tokens.*') ? 'active' : '' }}"><i class="nav-icon bi bi-hdd-network"></i> <span>{{ __('messages.api_tokens') }}</span></a></li>
+                        <li class="nav-item"><a href="{{ route('api-tokens.index') }}" data-menu-text="{{ ui('api_tokens') }}" class="nav-link {{ request()->routeIs('api-tokens.*') ? 'active' : '' }}"><i class="nav-icon bi bi-hdd-network"></i> <span>{{ ui('api_tokens') }}</span></a></li>
                         @endfeature
                         @endcanany
-                        <li class="nav-item"><a href="{{ route('features.index') }}" data-menu-text="{{ __('messages.features') }}" class="nav-link {{ request()->routeIs('features.*') ? 'active' : '' }}"><i class="nav-icon bi bi-toggle-on"></i> <span>{{ __('messages.features') }}</span></a></li>
+                        @can('feature.manage')
+                        @feature('features')
+                        <li class="nav-item"><a href="{{ route('features.index') }}" data-menu-text="{{ ui('features') }}" class="nav-link {{ request()->routeIs('features.*') ? 'active' : '' }}"><i class="nav-icon bi bi-toggle-on"></i> <span>{{ ui('features') }}</span></a></li>
+                        @endfeature
+                        @endcan
                         @can('feature.manage')
                         @feature('plans')
                         <li class="nav-item"><a href="{{ route('plans.index') }}" data-menu-text="{{ ui('plans') }}" class="nav-link {{ request()->routeIs('plans.*') ? 'active' : '' }}"><i class="nav-icon bi bi-tags"></i> <span>{{ ui('plans') }}</span></a></li>
@@ -95,8 +134,11 @@
                         @endcan
                         @can('translation.view')
                         @feature('translations')
-                        <li class="nav-item"><a href="{{ route('translations.index') }}" data-menu-text="{{ __('messages.translations') }}" class="nav-link {{ request()->routeIs('translations.*') ? 'active' : '' }}"><i class="nav-icon bi bi-translate"></i> <span>{{ __('messages.translations') }}</span></a></li>
+                        <li class="nav-item"><a href="{{ route('translations.index') }}" data-menu-text="{{ ui('translations') }}" class="nav-link {{ request()->routeIs('translations.*') ? 'active' : '' }}"><i class="nav-icon bi bi-translate"></i> <span>{{ ui('translations') }}</span></a></li>
                         @endfeature
+                        @endcan
+                        @can('feature.manage')
+                        <li class="nav-item"><a href="{{ route('settings.system') }}" data-menu-text="{{ ui('system_settings') }}" class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}"><i class="nav-icon bi bi-gear-fill"></i> <span>{{ ui('system_settings') }}</span></a></li>
                         @endcan
                     </ul>
                 </li>
@@ -108,7 +150,7 @@
                 <li class="nav-item">
                     <form method="POST" action="{{ route('logout') }}" class="m-0">
                         @csrf
-                        <button type="submit" class="nav-link border-0 bg-transparent text-start w-100"><i class="nav-icon bi bi-box-arrow-right"></i> <span>{{ __('messages.logout') }}</span></button>
+                        <button type="submit" class="nav-link border-0 bg-transparent text-start w-100"><i class="nav-icon bi bi-box-arrow-right"></i> <span>{{ ui('logout') }}</span></button>
                     </form>
                 </li>
 
@@ -121,7 +163,7 @@
                         <li class="nav-item"><a href="{{ asset('vendor/adminlte/widgets/small-box.html') }}" class="nav-link" target="_blank"><i class="nav-icon bi bi-circle"></i> <span>Small Box</span></a></li>
                         <li class="nav-item"><a href="{{ asset('vendor/adminlte/widgets/info-box.html') }}" class="nav-link" target="_blank"><i class="nav-icon bi bi-circle"></i> <span>Info Box</span></a></li>
                         <li class="nav-item"><a href="{{ asset('vendor/adminlte/widgets/cards.html') }}" class="nav-link" target="_blank"><i class="nav-icon bi bi-circle"></i> <span>Cards</span></a></li>
-                        <li class="nav-item"><a href="{{ asset('vendor/adminlte/widgets/social.html') }}" class="nav-link" target="_blank"><i class="nav-icon bi bi-circle"></i> <span>Social &amp; Post</span></a></li>
+                        <li class="nav-item"><a href="{{ asset('vendor/adminlte/widgets/social.html') }}" class="nav-link" target="_blank"><i class="nav-icon bi bi-circle"></i> <span>Social &amp; post</span></a></li>
                     </ul>
                 </li>
 

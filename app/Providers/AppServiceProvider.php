@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Observers\PermissionObserver;
 use App\Observers\RoleObserver;
 use App\Observers\UserObserver;
+use App\Services\PlanService;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
@@ -22,7 +24,42 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // CHALLENGE 3: Register Plan permission boundary BEFORE spatie does.
+        // Register() runs before all boot() methods, so our afterResolving listener
+        // (index 0) executes before spatie's callAfterResolving (index 1) when the
+        // Gate is first resolved. This guarantees our Plan check runs first;
+        // returning false short-circuits before spatie's role check.
+        // Fail closed: Plan entitlement is necessary (not sufficient).
+        $this->app->afterResolving(Gate::class, function (Gate $gate) {
+            $gate->before(function ($user, $ability) {
+                if (! $user) {
+                    return null;
+                }
+
+                // Only check known permission names (avoid overhead on policy abilities)
+                if (Permission::where('name', $ability)->exists()) {
+                    // RBAC system permissions (role.*, permission.*) are governed by
+                    // the user's role, not the plan tier — the plan boundary only caps
+                    // assignable domain permissions (enforced separately in RoleController::filterPermissions).
+                    if (str_starts_with($ability, 'role.') || str_starts_with($ability, 'permission.')) {
+                        return null;
+                    }
+
+                    // SUPERADMIN: platform-level super-admins (via the 'super-admin' role)
+                    // bypass the Plan entitlement boundary. They are still subject to
+                    // Pennant feature flags (checked at route middleware level, not here).
+                    if ($user->isSuperAdmin()) {
+                        return null;
+                    }
+
+                    if (! PlanService::for($user)->allows($ability) && Feature::active('plans')) {
+                        return false;
+                    }
+                }
+
+                return null;
+            });
+        });
     }
 
     /**
@@ -36,8 +73,10 @@ class AppServiceProvider extends ServiceProvider
 
         // ponytail: declare every module feature flag so Pennant resolves it;
         // default ON. DB store persists toggles from the /features UI.
-        foreach (array_keys(config('pennant.features', [])) as $slug) {
-            Feature::define($slug, fn () => true);
+        // Flags marked 'disabled' in config/pennant.php default OFF (kill-switch).
+        foreach (config('pennant.features', []) as $slug => $meta) {
+            $off = $meta['disabled'] ?? false;
+            Feature::define($slug, fn () => ! $off);
         }
 
         Paginator::useBootstrap();

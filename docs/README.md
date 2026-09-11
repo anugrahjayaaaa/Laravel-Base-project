@@ -1,44 +1,89 @@
-# Laravel Base Project
+# Laravel Base Project — Documentation
 
-Base core system built on Laravel (latest) — the foundation for a web admin
-plus a mobile API integration. This document is the **single source of truth**.
-AI agents and developers MUST read these docs before coding; if code conflicts
-with docs, **docs win** (change via an ADR).
+Base core system built on Laravel 13 — a reusable web admin + mobile API
+foundation (auth, RBAC, audit, feature-flagged modules, licensing/billing).
 
-## How AI uses these docs
-- Start every task with the `dev-lifecycle` skill, then read the relevant doc first.
-- Each phase gate must be green before proceeding.
-- New requirement → add to `CONTRIBUTING.md` (open items) or write a new ADR.
+This directory is the **single source of truth**. AI agents and developers
+MUST read `docs/README.md` and the relevant `docs/base/...` doc before coding.
+If code conflicts with docs → **docs win** (change via an ADR in
+`docs/architecture/decisions/`).
 
-## Docs structure
-| File | Contents |
-|------|----------|
-| README.md | This index, goal, usage |
-| CONTRIBUTING.md | Dev setup, conventions, Definition of Done, open items |
-| architecture.md | Stack, layered architecture, v1 modules, decisions |
-| PRD.md | Product Requirements: scope, users, authz model, success metrics |
-| coding-standard.md | **Mandatory** coding rules — route-level authz, base Controller, Form Requests |
-| auth.md | Authentication (username/phone, strong pwd, lockout, verify) |
-| authorization.md | Dynamic RBAC + management UI |
-| feature-flags.md | Feature flags (layer above RBAC) |
-| audit-trail.md | Logging all user actions |
-| notifications.md | Native Laravel notifications (bell + page) |
-| api-tokens.md | Sanctum personal tokens (web UI) + mobile |
-| api.md | Full REST API `/api/v1` reference |
-| log-viewer.md | Web log viewer (`/logs`) |
-| frontend-theme.md | AdminLTE 4.9.1, dark default, responsive, sidebar |
-| observability.md | Logger + Sentry + health check |
-| api-mobile.md | Sanctum API /api/v1 for mobile |
-| i18n.md | Multi-locale web UI + REST API (en/id), file→DB override |
-| licensing-and-billing.md | Licensing + billing (Model 1/2, dummy PG). **§11 plan limit model** — `limits` keys, dynamic feature→permission map, server guards |
-| packages.md | Verified packages (don't reinvent) |
-| adr.md | Architecture Decision Records |
-| custom/README.md | **Custom features** for derived projects (separate from base docs) |
+## How AI agents consume these docs
 
-## LOCKED DECISIONS (user confirmed, 27 Aug 2026)
-1. All proposed extra features are in v1 (reset pwd, lockout, verify, self-service, session mgmt, seed, dashboard, /up).
-2. Template **AdminLTE 4.9.1** (dist zip from GitHub release).
-3. Verification is **email only**; MFA/2FA is not v1.
-4. i18n: **English + Indonesian** (en first, id mirrored). Files are source of truth; `language_lines` DB rows override at runtime.
-5. Single-tenant v1 (schema ready to add `tenant_id` later).
-6. Sidebar: main menu + a "Template" section (demo from zip) below it.
+Read `docs/agents/` for the context-loading rules and agent rules.
+Brief:
+
+- Existing feature task → read `docs/README.md`, the relevant
+  `docs/base/features/<feature>/`, `docs/base/modules/`,
+  `docs/base/conventions/`, then inspect the actual source code.
+- New feature task → read `docs/README.md`, relevant base features, then the
+  target spec under `docs/custom/features/<feature>/` (if it exists).
+
+## Documentation tree
+
+```text
+docs/
+├── README.md                          ← this file (master index)
+├── architecture/                      ← system-level knowledge
+│   ├── overview.md                    ← stack, layered architecture, v1 modules
+│   ├── decisions/                     ← ADRs (architecture decisions)
+│   │   ├── README.md                  ← ADR index + conventions
+│   │   ├── ADR-0001-adminlte-template.md
+│   │   ├── ADR-0002-rbac-spatie.md
+│   │   ├── ADR-0003-sanctum.md
+│   │   ├── ADR-0004-soft-delete-audit.md
+│   │   ├── ADR-0005-dark-mode.md
+│   │   ├── ADR-0006-single-tenant.md
+│   │   ├── ADR-0007-email-verification.md
+│   │   ├── ADR-0008-template-sidebar.md
+│   │   ├── ADR-0009-feature-flags.md
+│   │   └── ADR-0010-route-level-authz.md
+│   └── decisions/
+├── base/                              ← CURRENT IMPLEMENTED SYSTEM
+│   ├── README.md                      ← system scope + PRD summary
+│   ├── features/                      ← per-feature docs
+│   │   ├── auth.md
+│   │   ├── rbac.md                    ← authorization
+│   │   ├── audit-trail.md
+│   │   ├── feature-flags.md
+│   │   ├── i18n.md
+│   │   ├── licensing-and-billing.md
+│   │   ├── notifications.md
+│   │   ├── api-tokens.md
+│   │   ├── api-mobile.md
+│   │   ├── license-mode-design.md
+│   │   ├── permission-sync-design.md
+│   │   └── plan-limits-design.md
+│   ├── modules/                       ← layer/module reference
+│   │   ├── api.md
+│   │   ├── backend.md
+│   │   ├── frontend.md
+│   │   └── infrastructure.md
+│   └── conventions/                   ← mandatory coding rules
+│       └── coding.md
+├── custom/                            ← PROPOSED/NEW features (per derived project)
+│   ├── README.md
+│   ├── _template/
+│   │   └── feature.md
+│   └── features/                      ← future custom feature specs
+├── agents/                            ← guidance for AI agents consuming docs
+│   ├── README.md
+│   └── rules.md                       ← context-loading + coding rules
+├── CHANGELOG.md                        ← general-fixes changelog
+└── CONTRIBUTING.md                      ← dev setup + open items
+```
+
+> `docs/base/` = **reality** (implemented). `docs/custom/` = **intent** (not yet built).
+> Each base feature file declares its **status** at the top.
+
+## Quick links
+
+- [Architecture overview](./architecture/overview.md)
+- [Stack + modules (locked decisions)](./architecture/overview.md#stack-locked)
+- [Authorization model — route-level `can:` + `feature:`](./base/features/rbac.md)
+- [Coding standard (mandatory)](./base/conventions/coding.md)
+- [Licensing & billing (Model 1, dummy PG)](./base/features/licensing-and-billing.md)
+- [i18n (en/id, file→DB override)](./base/features/i18n.md)
+- [ADR-0010: gate on route, not controller](./architecture/decisions/README.md)
+- [ADR index](./architecture/decisions/README.md)
+- [Agent rules](./agents/rules.md)

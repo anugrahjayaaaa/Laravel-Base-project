@@ -20,24 +20,30 @@
             @endif
             @if (auth()->user()->can('user.lock'))
                 @if ($user->isLocked())
-                    <span>Unlock:
-                        <form method="POST" action="{{ route('users.unlock', $user) }}" class="d-inline">@csrf
-                            <button class="btn btn-sm btn-warning">{{ ui('unlock') }}</button>
-                        </form>
-                    </span>
+                    <button type="button" class="btn btn-sm btn-light border rounded-2 text-warning"
+                        data-bs-toggle="modal" data-bs-target="#lockUserModal"
+                        data-action="{{ route('users.unlock', $user) }}"
+                        data-label="{{ ui('confirm_unlock') }}"
+                        data-bs-title="{{ ui('unlock') }}" aria-label="{{ ui('unlock') }}" style="min-width:38px">
+                        <i class="bi bi-unlock-fill"></i>
+                    </button>
                 @else
-                    <span>Lock:
-                        <form method="POST" action="{{ route('users.lock', $user) }}" class="d-inline">@csrf
-                            <button class="btn btn-sm btn-danger">{{ ui('lock') }}</button>
-                        </form>
-                    </span>
+                    <button type="button" class="btn btn-sm btn-light border rounded-2 text-danger"
+                        data-bs-toggle="modal" data-bs-target="#lockUserModal"
+                        data-action="{{ route('users.lock', $user) }}"
+                        data-label="{{ ui('confirm_lock') }}"
+                        data-bs-title="{{ ui('lock') }}" aria-label="{{ ui('lock') }}" style="min-width:38px">
+                        <i class="bi bi-lock-fill"></i>
+                    </button>
                 @endif
             @endif
         </div>
         @if (auth()->user()->can('user.edit'))
         <span>{{ ui('send_reset_email_label') }}
             <form method="POST" action="{{ route('users.reset-password', $user) }}" class="d-inline">@csrf
-                <button class="btn btn-sm btn-secondary">{{ ui('send_reset_email') }}</button>
+                <button type="submit" class="btn btn-sm btn-light border rounded-2" data-bs-toggle="tooltip" data-bs-title="{{ ui('send_reset_email') }}" aria-label="{{ ui('send_reset_email') }}" style="min-width:38px">
+                    <i class="bi bi-envelope"></i>
+                </button>
             </form>
         </span>
         @endif
@@ -70,15 +76,36 @@
                     <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $user->phone ?? '') }}">
                     @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+                {{-- password — matches profile/show + auth/register pattern (input-group + eye toggle) --}}
                 <div class="col-md-6">
                     <label class="form-label">{{ ui('password') }}{{ isset($user) ? ' ' . ui('leave_blank_to_keep') : '' }}</label>
-                    <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" {{ isset($user) ? '' : 'required' }}>
-                    @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div class="input-group">
+                        <input type="text" name="password" id="password" class="form-control @error('password') is-invalid @enderror" {{ isset($user) ? '' : 'required' }} aria-describedby="password-error" @error('password') aria-invalid="true" @enderror value="{{ isset($user) ? old('password', '') : '' }}">
+                        <button type="button" class="btn btn-outline-secondary" id="toggle-password" aria-label="{{ ui('show_password') }}">
+                            <i class="bi bi-eye" id="password-icon"></i>
+                        </button>
+                        @unless(isset($user))
+                        <button type="button" class="btn btn-outline-secondary" id="generate-password" aria-label="{{ ui('generate_password') ?? 'Generate password' }}">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        @endunless
+                    </div>
+                    @error('password')<div id="password-error" class="invalid-feedback d-block w-100 mt-1" role="alert" aria-live="polite">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">{{ ui('confirm_password') }}</label>
-                    <input type="password" name="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror">
-                    @error('password_confirmation')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div class="input-group">
+                        <input type="text" name="password_confirmation" id="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror" aria-describedby="password_confirmation-error" @error('password_confirmation') aria-invalid="true" @enderror value="{{ isset($user) ? old('password_confirmation', '') : '' }}">
+                        <button type="button" class="btn btn-outline-secondary" id="toggle-password-confirm" aria-label="{{ ui('show_password') }}">
+                            <i class="bi bi-eye" id="password-confirm-icon"></i>
+                        </button>
+                        @unless(isset($user))
+                        <button type="button" class="btn btn-outline-secondary" id="copy-password" aria-label="Copy password">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                        @endunless
+                    </div>
+                    @error('password_confirmation')<div id="password_confirmation-error" class="invalid-feedback d-block w-100 mt-1" role="alert" aria-live="polite">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12">
                     <label class="form-label">{{ ui('roles') }}</label>
@@ -98,8 +125,55 @@
         </div>
         <div class="card-footer d-flex justify-content-end gap-2">
             <a href="{{ route('users.index') }}" class="btn btn-link">{{ ui('cancel') }}</a>
-            <button class="btn btn-primary">{{ ui('save') }}</button>
+            <button type="submit" class="btn btn-primary">{{ ui('save') }}</button>
         </div>
     </div>
 </form>
+@include('partials.modals.lock-user-modal')
+@push('scripts')
+<script>
+    // password visibility toggle — mirrors auth/register.blade.php + profile/show
+    (function () {
+        for (const [field, btn, icon] of [
+            ['password', 'toggle-password', 'password-icon'],
+            ['password_confirmation', 'toggle-password-confirm', 'password-confirm-icon']
+        ]) {
+            const pwd = document.getElementById(field);
+            const b = document.getElementById(btn);
+            const i = document.getElementById(icon);
+            if (pwd && b && i) {
+                b.addEventListener('click', function () {
+                    const show = pwd.type === 'password';
+                    pwd.type = show ? 'text' : 'password';
+                    i.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+                });
+            }
+        }
+
+        const generateBtn = document.getElementById('generate-password');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', function () {
+                const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+';
+                let out = '';
+                const values = crypto.getRandomValues(new Uint8Array(24));
+                for (const v of values) out += charset[v % charset.length];
+                document.getElementById('password').value = out;
+                document.getElementById('password_confirmation').value = out;
+            });
+        }
+
+        const copyBtn = document.getElementById('copy-password');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async function () {
+                const val = document.getElementById('password').value;
+                if (!val) return;
+                await navigator.clipboard.writeText(val);
+                const original = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="bi bi-check"></i>';
+                setTimeout(() => copyBtn.innerHTML = original, 1200);
+            });
+        }
+    })();
+</script>
+@endpush
 @endsection

@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\PasswordResetRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
@@ -31,11 +32,9 @@ class AuthApiController extends AuthController
         $status = Password::broker('users')->sendResetLink($request->validated());
 
         if ($status === Password::RESET_LINK_SENT) {
-            activity()->withProperties([
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent(),
+            $this->auditAction('password_reset_request', $request->user(), [
                 'email' => $request->email,
-            ])->log('password_reset_request');
+            ]);
 
             return response()->json(['message' => __($status)]);
         }
@@ -58,10 +57,14 @@ class AuthApiController extends AuthController
     {
         $status = Password::broker('users')->reset(
             $request->validated(),
-            fn ($user, $password) => $user->forceFill(['password' => bcrypt($password)])->save()
+            fn ($user, $password) => $user->forceFill(['password' => Hash::make($password)])->save()
         );
 
         if ($status === Password::PASSWORD_RESET) {
+            $this->auditAction('password_reset', $request->user(), [
+                'email' => $request->email,
+            ]);
+
             return response()->json(['message' => __($status)]);
         }
 
@@ -95,6 +98,8 @@ class AuthApiController extends AuthController
 
         $user->markEmailAsVerified();
 
+        $this->audit($user, 'email_verified', $user);
+
         return response()->json(['message' => __('messages.email_verified')]);
     }
 
@@ -112,7 +117,10 @@ class AuthApiController extends AuthController
         if ($user->hasVerifiedEmail()) {
             return response()->json(['message' => __('messages.email_already_verified')], 400);
         }
+
         $user->sendEmailVerificationNotification();
+
+        $this->audit($user, 'verification_resent', $user);
 
         return response()->json(['message' => __('messages.verification_link_sent')]);
     }

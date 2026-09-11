@@ -1,5 +1,5 @@
 @extends('layouts.app')
 @section('content')
-<h3>New Role</h3>
+<h3>{{ ui('new_role') }}</h3>
 @include('access.roles.edit')
 @endsection

@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('name');
             $table->decimal('price_monthly', 12, 2)->default(0);
             $table->boolean('is_active')->default(true);
-            $table->json('limits')->nullable();          // {"max_members":N,"max_projects":N,"max_storage_mb":N}
+            $table->json('limits')->nullable();          // {max_features,max_members,max_roles,max_permissions,max_storage_mb,allowed_permissions[]}
             $table->json('features')->nullable();        // ["kanban","audit",...]
             $table->timestamps();
         });

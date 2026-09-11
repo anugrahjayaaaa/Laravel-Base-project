@@ -1,24 +1,32 @@
-# Custom Features (per derived project)
+# Custom Features
 
-This folder holds **project-specific** features built on top of the Laravel Base
-Project. It is **separate from `docs/`**, which documents the shared base
-platform (auth, RBAC, audit, i18n, feature-flags, etc.).
+`docs/custom/` holds **proposed or new** feature specifications for derived
+projects. These documents represent **intent**, NOT yet-implemented behavior.
 
-## Rule
+> Custom features are NOT part of the base system until their status is
+> `implemented` AND the feature is migrated to `docs/base/features/`.
 
-- `docs/` → BASIC features (shared across every fork). Do not edit for
-  project-specific work unless the change belongs to the base itself.
-- `docs/custom/` → features added for THIS project (e.g. a Jira-clone:
-  boards, issues, sprints, workflows).
-- Each custom feature = one file here, named after the feature
-  (copy `TEMPLATE.md` as a starting point).
-- When a custom feature needs base-level changes (new migration in base, new
-  shared helper), discuss first, then update `docs/` only for the base part.
+## Status values
 
-## Index
+`proposed` → `approved` → `in-progress` → `implemented` → `deprecated`
+(rejected features may skip from `proposed`).
 
-| Feature | Doc | Status |
-|---------|-----|--------|
-| _(none yet)_ | — | — |
+## Templates
 
-> Add a row here when a new custom feature doc is created.
+Start a new custom feature from [`_template/feature.md`](./_template/feature.md).
+It defines the standard structure: Overview, Problem, Goal, Non-Goals, Actors,
+Functional/Non-Functional Requirements, Business Rules, Main/Alt/Error Flows,
+Technical Design, Backend/Frontend/Database/API Impact, Security, Dependencies,
+Risks, Testing Strategy, Acceptance Criteria, Open Questions, Implementation Notes.
+
+## Custom features
+
+Individual specs live under [`features/`](./features/). Add new feature
+folders as work is requested.
+
+## Relationship to base
+
+Custom features describe extensions to the base system. They MAY depend on base
+features ([`../base/features/`](../base/features/)) — reference them, do not
+duplicate. When a custom feature is implemented, it graduates into
+`docs/base/features/`.

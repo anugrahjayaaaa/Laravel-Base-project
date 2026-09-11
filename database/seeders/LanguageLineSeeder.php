@@ -9,7 +9,9 @@ class LanguageLineSeeder extends Seeder
 {
     public function run(): void
     {
-        $groups = ['messages', 'ui', 'validation'];
+        // Only groups seeded into DB for runtime override.
+        // validation.php uses nested arrays — skipped by design (see LanguageLine docs).
+        $groups = ['messages', 'ui'];
         $locales = config('app.available_locales');
 
         foreach ($groups as $group) {
@@ -20,13 +22,18 @@ class LanguageLineSeeder extends Seeder
                     continue;
                 }
                 foreach (require $path as $key => $text) {
+                    // Laravel's validation.php ships nested keys (e.g. 'between' => ['numeric' => ...]);
+                    // storing those as JSON makes getTranslation() return an array -> TypeError.
+                    if (is_array($text)) {
+                        continue;
+                    }
                     $keys[$key][$locale] = $text;
                 }
             }
             foreach ($keys as $key => $text) {
                 LanguageLine::updateOrCreate(
                     ['group' => $group, 'key' => $key],
-                    ['text' => $text],
+                    ['text' => $text]
                 );
             }
 
