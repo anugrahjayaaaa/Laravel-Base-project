@@ -104,12 +104,11 @@
 
 # Phase 8 — Settings & Registration
 
-* [ ] SETTING-01 — Verify system settings update flow
-* [ ] SETTING-02 — Verify settings authorization
-* [ ] SETTING-03 — Verify default locale behavior
-* [ ] SETTING-04 — Verify registration enable / disable behavior
-* [ ] SETTING-05 — Verify registration security and validation
-
+* [✓] SETTING-01 — Verify system settings update flow — **VERIFIED (fix applied)**. Fix: `SettingsController::update` accessed `$data['default_plan']`/`$data['default_role']` without `?? null` despite `nullable` validation → 500 on partial update (omitting nullable keys). Root cause: validation allows nullable but controller indexing assumes presence. Fix: `$data['default_plan'] ?? null` / `$data['default_role'] ?? null`. Tests: SettingsRegistrationTest `SETTING-01: updates system settings when authorized`.
+* [✓] SETTING-02 — Verify settings authorization — **VERIFIED no change**. Route gated `can:feature.manage` middleware (403 for missing perm BEFORE controller); `SystemSettingsRequest::authorize()` mirrors (`feature.manage`). Fail-fast, not fail-closed-404 — correct for authenticated settings. Tests: SettingsRegistrationTest `SETTING-02: denies system settings access without feature.manage`.
+* [✓] SETTING-03 — Verify default locale behavior — **VERIFIED no change**. `SystemSettingsRequest` validates `locale_default` via `Rule::in(config('app.available_locales',['en','id']))`; `LocaleController::update` sets `session('locale')` + `app()->setLocale()` (i18n switch active). Tests: LocaleTest `updates locale and persists in session`.
+* [✓] SETTING-04 — Verify registration enable / disable behavior — **VERIFIED no change**. `EnsureRegistrationEnabled` middleware gates `GET|POST register`/`register.store`; `registration_enabled` Setting default-fail-OPEN. Note: `abort(404)` on route access when disabled — fail-closed-by-hiding. Tests: SettingsRegistrationTest `SETTING-04: register route is fail-closed when registration disabled`.
+* [✓] SETTING-05 — Verify registration security and validation — **VERIFIED no change**. `RegisterRequest` enforces strong password (min 12 + upper/lower/number/symbol regex), unique `username`/`email`/`phone`, confirmed. Tests: SettingsRegistrationTest `SETTING-05: register validation rejects weak passwords and duplicates`.
 # Phase 9 — Notifications
 
 * [ ] NOTIFY-01 — Verify authentication notification lifecycle
@@ -258,3 +257,4 @@ Pending.
 | 2026-09-11 | P1   | VERIFIED | SESSION-01/03/05: session regen, lock invalidation, account_locked_auto audit regression |
 | 2026-09-11 | P1   | FIXED    | AUDIT-08: UserObserver/RoleObserver forceDeleted now emit non-HTTP fallback audit (was no-op) |
 | 2026-09-11 | P2   | VERIFIED | AUDIT-06: audit index causer filter + pagination regression test |
+| 2026-09-11 | P1   | FIXED    | SETTING-01: SettingsController update 500 on nullable default_plan/default_role — added ?? null (fix), SettingsRegistrationTest added

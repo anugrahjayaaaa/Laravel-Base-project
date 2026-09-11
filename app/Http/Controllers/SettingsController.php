@@ -42,8 +42,8 @@ class SettingsController extends Controller
         Setting::set('locale_default', $data['locale_default']);
         Setting::set('registration_enabled', $data['registration_enabled']);
         Setting::set('license_mode', $data['license_mode']);
-        Setting::set('default_plan', $data['default_plan']);
-        Setting::set('default_role', $data['default_role']);
+        Setting::set('default_plan', $data['default_plan'] ?? null);
+        Setting::set('default_role', $data['default_role'] ?? null);
 
         return back()->with('status', __('messages.settings_updated'));
     }
