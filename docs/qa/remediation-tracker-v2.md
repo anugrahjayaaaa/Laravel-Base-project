@@ -77,10 +77,10 @@
 
 * [ ] PROFILE-01 — Verify profile update lifecycle
 * [ ] PROFILE-02 — Verify password change security
-* [ ] SESSION-01 — Verify web session lifecycle
-* [ ] SESSION-02 — Verify logout-others behavior
-* [ ] SESSION-03 — Verify session invalidation after account lock
-* [ ] SESSION-04 — Verify session authorization and visibility
+* [✓] SESSION-01 — Verify web session lifecycle (login/logout) — **VERIFIED no change**. `LoginController::store` calls `Auth::attempt()` (fires Login event → `login_success` audit) + `$request->session()->regenerate()` (fixation guard); `destroy()` logs out + `invalidate()` + `regenerateToken()`. Tests: AuditTest `login_success audit fires exactly once` + SessionTest `SESSION-01: login regenerates the session and emits exactly one login_success`.
+* [✓] SESSION-02 — Verify logout-others behavior — **VERIFIED no change**. `SessionController::logoutOthers` deletes other session rows (`sessions` table, filtered by current id) + `Auth::logoutOtherDevices()` when password supplied + `session_logout_others` audit. Tests: SessionTest `logs out other sessions without password` + `regenerates device session with valid password (Auth facade regression)`.
+* [✓] SESSION-03 — Verify session invalidation after account lock — **VERIFIED no change**. `UserController::lock` → `UserService::lock` (sets `locked_permanently=true`, deletes all `sessions` table rows for user) + `user_locked` + `session_invalidated` audits + `user_locked` prevents re-login via `LoginController::isLocked()` check. Tests: SessionTest `SESSION-03: account lock invalidates active sessions (sessions table cleared)`.
+* [✓] SESSION-04 — Verify session authorization and visibility — **VERIFIED no change**. `sessions.index` gated `feature:sessions` + `can:session.view`; `index` queries `sessions` table with `where('user_id', auth()->id())` — no cross-user visibility. `can:session.revoke` on logoutOthers. Tests: SessionTest `lists the current user only their sessions`.
 
 # Phase 6 — Feature Flags & Navigation
 
