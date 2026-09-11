@@ -112,3 +112,33 @@ it('cross-feature regression: all mutation features emit audit logs', function (
     expect(Activity::where('description', 'role_created')->exists())->toBeTrue();
     expect(Activity::where('description', 'feature_enabled')->exists())->toBeTrue();
 });
+
+it('USER-01: destroy/restore/forceDelete audit fires exactly once with correct causer', function () {
+    $causerId = $this->user->id;
+
+    $target = User::factory()->create(['username' => 'del'.time(), 'name' => 'Del']);
+
+    $this->delete(route('users.destroy', $target))->assertRedirect(route('users.index'));
+    expect(Activity::where('description', 'user_deleted')->where('subject_id', $target->id)->count())->toBe(1);
+    expect(Activity::where('description', 'user_deleted')->first()->causer_id)->toBe($causerId);
+
+    $this->post(route('users.restore', $target->id))->assertRedirect(route('users.index'));
+    expect(Activity::where('description', 'user_restored')->where('subject_id', $target->id)->count())->toBe(1);
+    expect(Activity::where('description', 'user_restored')->first()->causer_id)->toBe($causerId);
+
+    $this->post(route('users.forceDelete', $target->id))->assertRedirect(route('users.index'));
+    expect(Activity::where('description', 'user_force_deleted')->where('subject_id', $target->id)->count())->toBe(1);
+    expect(Activity::where('description', 'user_force_deleted')->first()->causer_id)->toBe($causerId);
+});
+
+it('USER-06: lock emits user_locked + session_invalidated audit with correct causer', function () {
+    $target = User::factory()->create(['username' => 'lock'.time(), 'name' => 'Lock']);
+
+    $this->post(route('users.lock', $target))->assertRedirect(route('users.index'));
+    expect(Activity::where('description', 'user_locked')->where('subject_id', $target->id)->count())->toBe(1);
+    expect(Activity::where('description', 'user_locked')->first()->causer_id)->toBe($this->user->id);
+    expect(Activity::where('description', 'session_invalidated')->where('subject_id', $target->id)->count())->toBe(1);
+
+    $this->post(route('users.unlock', $target))->assertRedirect(route('users.index'));
+    expect(Activity::where('description', 'user_unlocked')->where('subject_id', $target->id)->count())->toBe(1);
+});

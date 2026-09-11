@@ -154,7 +154,7 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', __('messages.cannot_delete_self'));
         }
 
-        $this->audit($user, 'user_deleted', $request->user());
+        $this->audit($user, 'user_deleted', auth()->user());
 
         $user->delete();
 
@@ -165,7 +165,7 @@ class UserController extends Controller
     {
         $user = User::withTrashed()->findOrFail($id);
 
-        $this->audit($user, 'user_restored', $request->user());
+        $this->audit($user, 'user_restored', auth()->user());
 
         $user->restore();
 
@@ -180,7 +180,7 @@ class UserController extends Controller
 
         $user = User::withTrashed()->findOrFail($id);
 
-        $this->audit($user, 'user_force_deleted', $request->user());
+        $this->audit($user, 'user_force_deleted', auth()->user());
 
         $user->forceDelete();
 

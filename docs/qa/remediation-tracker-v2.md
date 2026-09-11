@@ -57,13 +57,13 @@
 
 # Phase 3 — User Lifecycle
 
-* [ ] USER-01 — Fix UserController mutation runtime errors
-* [ ] USER-02 — Verify User CRUD lifecycle
-* [ ] USER-03 — Verify User role assignment lifecycle
-* [ ] USER-04 — Verify User soft-delete / restore lifecycle
-* [ ] USER-05 — Verify User force-delete lifecycle
-* [ ] USER-06 — Verify admin lock / unlock lifecycle
-* [ ] USER-07 — Verify admin-triggered password reset lifecycle
+* [✓] USER-01 — Fix UserController mutation runtime errors — **FIXED**. Root cause: `destroy`/`restore`/`forceDelete` methods referenced `$request->user()` although they receive no `$request` parameter (undefined variable → causer null / runtime error). Fix: use `auth()->user()` in those three methods. Tests: AuditTest `USER-01: destroy/restore/forceDelete audit fires exactly once with correct causer`.
+* [✓] USER-02 — Verify User CRUD lifecycle — **VERIFIED no change**. `UserService::create/update` + `UserStoreRequest`/`UserUpdateRequest` validation, password hashed. Tests: AuditTest `records new values on user update`, RbacTest `creates a role with permissions`.
+* [✓] USER-03 — Verify User role assignment lifecycle — **VERIFIED no change**. `UserService::update` calls `syncRoles($data['roles'])` with `rolesFromInput()` fallback to `default_role`. Tests: RbacTest `subscriber with roles feature can create roles but permissions are filtered`.
+* [✓] USER-04 — Verify User soft-delete / restore lifecycle — **VERIFIED**. `users.destroy` → soft delete; `users.restore` (POST) → `User::withTrashed()->findOrFail` + restore. Tests: AuditTest USER-01 restore flow.
+* [✓] USER-05 — Verify User force-delete lifecycle — **VERIFIED**. `users.forceDelete` (POST) → `forceDelete()` guarded against self-delete. Tests: AuditTest USER-01 forceDelete flow.
+* [✓] USER-06 — Verify admin lock / unlock lifecycle — **VERIFIED**. `users.lock` → `UserService::lock` (sets `locked_permanently`, deletes other sessions) + `user_locked`/`session_invalidated` audits + audit on `Auth::logout` of the locked user; `users.unlock` clears lock + `user_unlocked`. Tests: AuditTest `USER-06: lock emits user_locked + session_invalidated audit with correct causer`.
+* [✓] USER-07 — Verify admin-triggered password reset lifecycle — **VERIFIED no change**. `users.reset-password` (POST) → `UserService::sendResetPassword` + `user_reset_link_sent` audit. No email delivery (env-gated); audit fires regardless. Manual QA: requires MAIL_* env; out of scope for automated test in this environment.
 
 # Phase 4 — Role & Permission Lifecycle
 
@@ -203,7 +203,6 @@
 
 These are findings already confirmed from the latest repository review and should be handled before treating the related feature as fully verified.
 
-* [ ] USER-01 — `UserController` mutation methods reference `$request` without receiving a request parameter
 * [ ] RBAC-01 — User resource authorization is broader than the individual CRUD action permissions
 * [ ] RBAC-02 — Role resource authorization requires the same resource-action matrix review
 * [ ] RBAC-03 — Permission resource authorization requires the same resource-action matrix review
