@@ -138,14 +138,14 @@
 
 # Phase 12 — Database & Data Integrity
 
-* [ ] DB-01 — Verify Model ↔ Migration consistency
-* [ ] DB-02 — Verify fillable / guarded consistency
-* [ ] DB-03 — Verify casts consistency
-* [ ] DB-04 — Verify nullable / default behavior
-* [ ] DB-05 — Verify foreign keys / relationships
-* [ ] DB-06 — Verify indexes and uniqueness constraints
-* [ ] DB-07 — Verify soft-delete behavior and related records
-* [ ] DB-08 — Review destructive operation integrity
+* [✓] DB-01 — Verify Model ↔ Migration consistency — **VERIFIED (re-verified)**. User `#[Fillable]` = `['name','username','email','phone','password','locked_until','locked_permanently','last_login_at','last_login_ip']`; migrasi `create_users_table` + `add_auth_columns` + `add_locked_until/permanently` + `add_last_login` cover semua kolom + `softDeletes`. `migrate:fresh --seed` green. No drift.
+* [✓] DB-02 — Verify fillable / guarded consistency — **VERIFIED no change**. `#[Fillable([...])]` eksplisit + `#[Hidden(['password','remember_token'])]`; tidak pakai `guarded` (lebih aman). `MustVerifyEmail` interface.
+* [✓] DB-03 — Verify casts consistency — **VERIFIED no change**. `casts()`: `email_verified_at`/`phone_verified_at`/`locked_until`/`last_login_at` → datetime; `locked_permanently` → boolean; `password` → hashed.
+* [✓] DB-04 — Verify nullable / default behavior — **VERIFIED no change**. `locked_permanently` default false; `locked_until`/`last_login_*`/`phone`/`phone_verified_at` nullable; `password` NOT NULL (enforced).
+* [✓] DB-05 — Verify foreign keys / relationships — **VERIFIED no change**. User→`payments()`/`licenses()` HasMany; `license()` HasOne; `sessions.user_id` string index; `personal_access_tokens.tokenable_id`/`tokenable_type`.
+* [✓] DB-06 — Verify indexes and uniqueness constraints — **VERIFIED no change**. `users.username` unique, `users.email` unique, `password_reset_tokens.email` primary, `sessions.user_id` index.
+* [✓] DB-07 — Verify soft-delete behavior and related records — **VERIFIED no change**. `User` + `Role`/`Permission` gunakan `SoftDeletes`; restore/forceDelete via `withTrashed()->findOrFail`. Tests: USER-04/USER-05, RBAC-06.
+* [✓] DB-08 — Review destructive operation integrity — **VERIFIED no change**. `UserController::destroy` guard `cannot_delete_self`; `forceDelete` self-guard + `locked_permanently` tidak reset sebelum delete (audit `user_deleted` tetap). Tests: USER-05, RBAC-01.
 
 # Phase 13 — Architecture & Code Quality
 
@@ -259,6 +259,6 @@ Pending.
 | 2026-09-11 | P2   | VERIFIED | AUDIT-06: audit index causer filter + pagination regression test |
 | 2026-09-11 | P1   | FIXED    | SETTING-01: SettingsController update 500 on nullable default_plan/default_role — added ?? null (fix), SettingsRegistrationTest added |
 | 2026-09-11 | P2   | VERIFIED | I18N-01..07: i18n dual-source + DB override + locale persistence verified (I18N-06 DEFERRED to API) |
-| 2026-09-11 | P2   | VERIFIED | NOTIFY-01..05: auth notification lifecycle, read/mark-all-read, authz, backfill verified via NotificationPageTest (4/4) |
 | 2026-09-11 | P2   | VERIFIED | LOG-01..06: error/HTTP logging, log viewer authz/search/filter, health gate, sensitive-data exclusion (10/10) |
-| 2026-09-11 | P2   | VERIFIED | NOTIFY-01..05 re-verified (real-time notify via LogAuthentication on Auth Events; backfill idempotent; authz fail-fast 403)
+| 2026-09-11 | P2   | VERIFIED | NOTIFY-01..05 re-verified (real-time via LogAuthentication Auth Events; backfill idempotent; authz fail-fast) |
+| 2026-09-11 | P2   | VERIFIED | DB-01..08: model↔migration consistency, casts, FK, indexes, soft-delete, integrity (re-verified; migrate:fresh green)
