@@ -1,5 +1,9 @@
 # Remediation Tracker
 
+> Source of truth: `feature/general-fixes`
+>
+> This tracker is for current remediation findings. Historical implementation phases may be marked complete in older QA reports, but a feature is not considered finally verified until the current code path and regression behavior are confirmed.
+
 ## Status Legend
 
 * `[ ] OPEN` — not started
@@ -7,98 +11,187 @@
 * `[x] FIXED` — implementation completed, verification pending
 * `[✓] VERIFIED` — implementation and verification completed
 * `[-] DEFERRED` — intentionally postponed
+* `[~] NEEDS REVIEW` — requires investigation before deciding whether a fix is needed
+
+## Priority
+
+* `P0` — security, authorization, runtime failure, data integrity
+* `P1` — feature behavior or architectural correctness
+* `P2` — maintainability, consistency, documentation
+* `P3` — style, optimization, technical debt
 
 ## Rules
 
 1. Work on one task at a time unless tasks are explicitly independent.
-2. Do not skip task IDs.
-3. Do not mark a task `VERIFIED` until the fix has been tested and verified.
-4. Keep task IDs stable; never rename or reuse an existing ID.
+2. Keep task IDs stable. Never rename or reuse an existing ID.
+3. Do not mark a task `VERIFIED` until the affected behavior has been tested and verified.
+4. A green test suite alone does not automatically make a task `VERIFIED`; manual behavior and feature-chain impact must also be considered when applicable.
 5. When a new issue is discovered, add a new task ID instead of silently changing an existing task.
-6. Keep API, Plan/License, Billing/Payment, and CI/CD tasks deferred until all higher-priority phases are completed.
-7. Detailed findings, affected files, root cause, fix notes, tests, and QA notes should be added under the corresponding task when work begins.
+6. Prefer the smallest safe fix that preserves the current architecture.
+7. Do not redesign working architecture without evidence that the current behavior is incorrect.
+8. API, Plan/License, Billing/Payment, and CI/CD remain deferred until higher-priority core findings are completed.
+9. Update this tracker whenever a task moves between states.
+10. Historical phase reports are evidence/context only; current source code and current verification determine final status.
 
 ---
 
-# Phase 1 — Authentication
+# Phase 1 — Authentication & Account Security
 
-* [ ] AUTH-01 — Fix authentication flow
-* [ ] AUTH-02 — Fix account lock / unlock enforcement
-* [ ] AUTH-03 — Fix password change / reset flow
-* [ ] AUTH-04 — Fix email verification flow
+* [ ] AUTH-01 — Verify current authentication flow end-to-end
+* [ ] AUTH-02 — Verify account lock / unlock enforcement
+* [ ] AUTH-03 — Verify password change / reset flow
+* [ ] AUTH-04 — Verify email verification flow
+* [ ] AUTH-05 — Verify login rate limiting and lockout interaction
+* [ ] AUTH-06 — Verify authenticated session lifecycle after login/logout
 
 # Phase 2 — Authorization / RBAC
 
-* [ ] RBAC-01 — Fix permission naming / consistency
-* [ ] RBAC-02 — Fix User authorization matrix
-* [ ] RBAC-03 — Fix Role authorization matrix
-* [ ] RBAC-04 — Fix Permission authorization matrix
-* [ ] RBAC-05 — Fix IDOR / ownership authorization
-* [ ] RBAC-06 — Fix soft-deleted role / permission authorization
-* [ ] RBAC-07 — Verify superadmin bypass behavior
+* [ ] RBAC-01 — Fix User resource authorization matrix
+* [ ] RBAC-02 — Fix Role resource authorization matrix
+* [ ] RBAC-03 — Fix Permission resource authorization matrix
+* [ ] RBAC-04 — Resolve permission naming consistency (`edit` vs `update`)
+* [ ] RBAC-05 — Verify IDOR / ownership authorization
+* [ ] RBAC-06 — Verify soft-deleted User / Role / Permission authorization
+* [ ] RBAC-07 — Verify superadmin authorization behavior
+* [ ] RBAC-08 — Verify role-permission assignment and effective permissions
 
-# Phase 3 — User & Profile
+# Phase 3 — User Lifecycle
 
-* [ ] USER-01 — Fix User CRUD lifecycle
-* [ ] USER-02 — Fix User role assignment lifecycle
-* [ ] USER-03 — Fix User delete / restore lifecycle
-* [ ] USER-04 — Fix Profile update flow
+* [ ] USER-01 — Fix UserController mutation runtime errors
+* [ ] USER-02 — Verify User CRUD lifecycle
+* [ ] USER-03 — Verify User role assignment lifecycle
+* [ ] USER-04 — Verify User soft-delete / restore lifecycle
+* [ ] USER-05 — Verify User force-delete lifecycle
+* [ ] USER-06 — Verify admin lock / unlock lifecycle
+* [ ] USER-07 — Verify admin-triggered password reset lifecycle
 
-# Phase 4 — Session & Security
+# Phase 4 — Role & Permission Lifecycle
 
-* [ ] SESSION-01 — Fix web session lifecycle
-* [ ] SESSION-02 — Fix logout-others behavior
-* [ ] SECURITY-01 — Audit sensitive-data exposure
-* [ ] SECURITY-02 — Audit mass assignment / validation boundaries
+* [ ] ROLE-01 — Verify Role CRUD lifecycle
+* [ ] ROLE-02 — Verify Role soft-delete / restore / force-delete lifecycle
+* [ ] ROLE-03 — Verify Role permission synchronization
+* [ ] ROLE-04 — Verify Permission CRUD lifecycle
+* [ ] ROLE-05 — Verify Permission soft-delete / restore / force-delete lifecycle
 
-# Phase 5 — Feature Flags
+# Phase 5 — Profile & Session
 
-* [ ] FEATURE-01 — Fix Pennant feature enforcement
-* [ ] FEATURE-02 — Fix feature + permission interaction
-* [ ] FEATURE-03 — Verify superadmin vs feature flag behavior
+* [ ] PROFILE-01 — Verify profile update lifecycle
+* [ ] PROFILE-02 — Verify password change security
+* [ ] SESSION-01 — Verify web session lifecycle
+* [ ] SESSION-02 — Verify logout-others behavior
+* [ ] SESSION-03 — Verify session invalidation after account lock
+* [ ] SESSION-04 — Verify session authorization and visibility
 
-# Phase 6 — Audit & Observability
+# Phase 6 — Feature Flags & Navigation
 
-* [ ] AUDIT-01 — Fix audit actor consistency
-* [ ] AUDIT-02 — Fix audit coverage for mutations
-* [ ] AUDIT-03 — Fix sensitive data exclusion from audit
-* [ ] AUDIT-04 — Verify audit query / filter behavior
+* [ ] FEATURE-01 — Verify Pennant feature enforcement
+* [ ] FEATURE-02 — Verify feature + permission interaction
+* [ ] FEATURE-03 — Verify feature-disabled route behavior
+* [ ] FEATURE-04 — Verify sidebar visibility matches actual authorization
+* [ ] FEATURE-05 — Verify feature management authorization
+* [ ] FEATURE-06 — Verify superadmin / feature.manage behavior
 
-# Phase 7 — Settings & Notifications
+# Phase 7 — Audit Trail
 
-* [ ] SETTING-01 — Fix Settings validation architecture
-* [ ] SETTING-02 — Verify Settings authorization
-* [ ] NOTIFY-01 — Verify notification lifecycle
-* [ ] NOTIFY-02 — Verify notification backfill / cleanup
+* [ ] AUDIT-01 — Verify audit coverage for all mutations
+* [ ] AUDIT-02 — Verify correct audit actor / causer
+* [ ] AUDIT-03 — Verify sensitive data is excluded from audit
+* [ ] AUDIT-04 — Verify create / update / delete / restore / force-delete audit events
+* [ ] AUDIT-05 — Verify lock / unlock / login / logout / reset audit events
+* [ ] AUDIT-06 — Verify audit filtering / sorting / pagination
+* [ ] AUDIT-07 — Verify audit CSV export respects filters
+* [ ] AUDIT-08 — Review audit implementation consistency across controllers / observers
 
-# Phase 8 — i18n & Data Integrity
+# Phase 8 — Settings & Registration
 
-* [ ] I18N-01 — Fix translation inconsistencies
+* [ ] SETTING-01 — Verify system settings update flow
+* [ ] SETTING-02 — Verify settings authorization
+* [ ] SETTING-03 — Verify default locale behavior
+* [ ] SETTING-04 — Verify registration enable / disable behavior
+* [ ] SETTING-05 — Verify registration security and validation
+
+# Phase 9 — Notifications
+
+* [ ] NOTIFY-01 — Verify authentication notification lifecycle
+* [ ] NOTIFY-02 — Verify unread/read behavior
+* [ ] NOTIFY-03 — Verify mark-all-read behavior
+* [ ] NOTIFY-04 — Verify notification authorization
+* [ ] NOTIFY-05 — Verify notification backfill / cleanup behavior
+
+# Phase 10 — Logs & Observability
+
+* [ ] LOG-01 — Verify application error logging
+* [ ] LOG-02 — Verify HTTP error logging
+* [ ] LOG-03 — Verify log viewer authorization
+* [ ] LOG-04 — Verify log search / filtering behavior
+* [ ] LOG-05 — Verify Telescope / Periscope feature and permission gates
+* [ ] LOG-06 — Verify sensitive data is not exposed through observability tools
+
+# Phase 11 — Translation / i18n
+
+* [ ] I18N-01 — Verify translation source consistency
 * [ ] I18N-02 — Verify EN / ID coverage
+* [ ] I18N-03 — Verify UI vs message namespace usage
+* [ ] I18N-04 — Verify runtime database translation overrides
+* [ ] I18N-05 — Verify web locale persistence
+* [ ] I18N-06 — Verify API locale behavior
+* [ ] I18N-07 — Verify missing-key / fallback behavior
+
+# Phase 12 — Database & Data Integrity
+
 * [ ] DB-01 — Verify Model ↔ Migration consistency
-* [ ] DB-02 — Verify relationships / foreign keys / indexes
-* [ ] DB-03 — Verify casts / fillable / nullable consistency
+* [ ] DB-02 — Verify fillable / guarded consistency
+* [ ] DB-03 — Verify casts consistency
+* [ ] DB-04 — Verify nullable / default behavior
+* [ ] DB-05 — Verify foreign keys / relationships
+* [ ] DB-06 — Verify indexes and uniqueness constraints
+* [ ] DB-07 — Verify soft-delete behavior and related records
+* [ ] DB-08 — Review destructive operation integrity
 
-# Phase 9 — Code Quality & Architecture
+# Phase 13 — Architecture & Code Quality
 
-* [ ] CODE-01 — Fix controller / request / service boundary issues
-* [ ] CODE-02 — Fix duplicated / inconsistent patterns
-* [ ] CODE-03 — Apply Pint cleanup
-* [ ] CODE-04 — Review strict-types policy
-* [ ] ARCH-01 — Final architecture consistency review
+* [ ] ARCH-01 — Verify Controller / FormRequest / Service boundaries
+* [ ] ARCH-02 — Verify business logic placement
+* [ ] ARCH-03 — Verify duplicated patterns and unnecessary coupling
+* [ ] ARCH-04 — Verify authorization placement consistency
+* [ ] ARCH-05 — Verify validation placement consistency
+* [ ] ARCH-06 — Review model / observer / event responsibilities
+* [ ] CODE-01 — Apply Pint cleanup
+* [ ] CODE-02 — Review strict-types policy
+* [ ] CODE-03 — Review dead code / unused code
+* [ ] CODE-04 — Review naming and consistency
 
-# Phase 10 — Full Verification
+# Phase 14 — Full Regression
 
-* [ ] QA-01 — Regression test all fixed areas
-* [ ] QA-02 — Manual feature-chain verification
-* [ ] QA-03 — Authorization matrix verification
-* [ ] QA-04 — Security regression verification
-* [ ] QA-05 — Final documentation / behavior consistency check
+* [ ] QA-01 — Run targeted regression tests for every fixed task
+* [ ] QA-02 — Run full automated test suite
+* [ ] QA-03 — Manual Authentication feature-chain verification
+* [ ] QA-04 — Manual User feature-chain verification
+* [ ] QA-05 — Manual Role / Permission feature-chain verification
+* [ ] QA-06 — Manual Session feature-chain verification
+* [ ] QA-07 — Manual Feature Flag feature-chain verification
+* [ ] QA-08 — Manual Audit feature-chain verification
+* [ ] QA-09 — Manual Settings / Registration verification
+* [ ] QA-10 — Manual Notification verification
+* [ ] QA-11 — Manual i18n verification
+* [ ] QA-12 — Final security / authorization regression
+* [ ] QA-13 — Final documentation consistency review
+
+# Phase 15 — Final Architecture Review
+
+* [ ] FINAL-01 — Review all resolved findings
+* [ ] FINAL-02 — Review all deferred findings
+* [ ] FINAL-03 — Verify no known P0/P1 findings remain
+* [ ] FINAL-04 — Verify feature-chain consistency across modules
+* [ ] FINAL-05 — Final production-readiness review
+
+---
 
 # Deferred — Last Priority
 
 * [-] API-01 — API authorization / security
 * [-] API-02 — API session / token behavior
+* [-] API-03 — API resource / endpoint consistency
 * [-] PLAN-01 — Plan architecture
 * [-] LICENSE-01 — License lifecycle
 * [-] BILL-01 — Billing / payment flow
@@ -106,14 +199,26 @@
 
 ---
 
+# Current Confirmed Findings
+
+These are findings already confirmed from the latest repository review and should be handled before treating the related feature as fully verified.
+
+* [ ] USER-01 — `UserController` mutation methods reference `$request` without receiving a request parameter
+* [ ] RBAC-01 — User resource authorization is broader than the individual CRUD action permissions
+* [ ] RBAC-02 — Role resource authorization requires the same resource-action matrix review
+* [ ] RBAC-03 — Permission resource authorization requires the same resource-action matrix review
+* [ ] RBAC-04 — Permission naming is inconsistent between route / documentation and FormRequest conventions
+
+Do not add the previous Settings inline-validation or Translation hardcoded-fallback findings again unless a new regression is discovered; those implementations have changed in the current branch.
+
+---
+
 # Task Detail Template
 
-Use this section format when a task is actively investigated.
-
-## AUTH-01 — Fix authentication flow
+## <TASK-ID> — <Task Title>
 
 Status: OPEN
-Priority: P0
+Priority: P1
 Dependencies: None
 
 ### Finding
@@ -150,6 +255,6 @@ Pending.
 
 # Change Log
 
-| Date       | Task    | Status | Summary         |
-| ---------- | ------- | ------ | --------------- |
-| YYYY-MM-DD | AUTH-01 | OPEN   | Initial tracker |
+| Date       | Task | Status | Summary                                                  |
+| ---------- | ---- | ------ | -------------------------------------------------------- |
+| YYYY-MM-DD | INIT | OPEN   | Tracker refreshed against latest `feature/general-fixes` |
