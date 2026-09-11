@@ -7,13 +7,6 @@ use Illuminate\Support\Facades\Request;
 
 trait Auditable
 {
-    /**
-     * @param object  $model
-     * @param string  $action
-     * @param object|null $causer
-     * @param array   $properties
-     * @return void
-     */
     private function audit(object $model, string $action, ?object $causer = null, array $properties = []): void
     {
         $causer ??= Auth::user();
@@ -32,12 +25,6 @@ trait Auditable
             ->log($action);
     }
 
-    /**
-     * @param string  $action
-     * @param object|null $causer
-     * @param array   $properties
-     * @return void
-     */
     private function auditAction(string $action, ?object $causer = null, array $properties = []): void
     {
         $causer ??= Auth::user();

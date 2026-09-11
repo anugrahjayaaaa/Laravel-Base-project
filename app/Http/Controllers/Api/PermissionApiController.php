@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\Auditable;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Rbac\PermissionStoreRequest;
 use App\Http\Requests\Rbac\PermissionUpdateRequest;
 use App\Http\Resources\PermissionResource;

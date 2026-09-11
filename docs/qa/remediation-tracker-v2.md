@@ -149,16 +149,16 @@
 
 # Phase 13 — Architecture & Code Quality
 
-* [ ] ARCH-01 — Verify Controller / FormRequest / Service boundaries
-* [ ] ARCH-02 — Verify business logic placement
-* [ ] ARCH-03 — Verify duplicated patterns and unnecessary coupling
-* [ ] ARCH-04 — Verify authorization placement consistency
-* [ ] ARCH-05 — Verify validation placement consistency
-* [ ] ARCH-06 — Review model / observer / event responsibilities
-* [ ] CODE-01 — Apply Pint cleanup
-* [ ] CODE-02 — Review strict-types policy
-* [ ] CODE-03 — Review dead code / unused code
-* [ ] CODE-04 — Review naming and consistency
+* [✓] ARCH-01 — Verify Controller / FormRequest / Service boundaries — **VERIFIED no change**. Controllers thin (UserService/BulkDelete/AuditQueryService injection), FormRequest validation, no inline `$request->validate()`. UserController 189 LOC (longest, masih di batas).
+* [✓] ARCH-02 — Verify business logic placement — **VERIFIED no change**. Logic di Service (UserService/PlanService/LicenseService) + Auditable trait; controller orchestration only.
+* [✓] ARCH-03 — Verify duplicated patterns and unnecessary coupling — **VERIFIED no change (minor)**. RoleController/PermissionController mirip — reuse `BulkDeleteService`; duplikasi minimal, pola RBAC konsisten. YAGNI — tidak factor lagi.
+* [✓] ARCH-04 — Verify authorization placement consistency — **VERIFIED no change**. Route `can:`+`feature:` middleware (bukan controller __construct); FormRequest::authorize mirror. Tests: RbacTest, ApiEndpointsTest.
+* [✓] ARCH-05 — Verify validation placement consistency — **VERIFIED no change**. Semua validation via dedicated FormRequest (UserStoreRequest, RoleStoreRequest, RegisterRequest, dll). tidak ada inline validate().
+* [✓] ARCH-06 — Review model / observer / event responsibilities — **VERIFIED no change**. Observer fallback (UserObserver/RoleObserver created/forceDeleted); event→listener (LogAuthentication); Auditable trait controller-first. Tests: ForceDeleteAuditTest, AuthLoginTest.
+* [✓] CODE-01 — Apply Pint cleanup — **FIXED**. Ponytail: `pint --test` gagal 20+ file (import order, whitespace, brace, unused imports). Apply `pint` auto-fix di seluruh repo. Post-fix `pint --test` pass clean; subset tests (RbacTest+SettingsRegistrationTest, pint-fixed) 12/12 green.
+* [~] CODE-02 — Review strict-types policy — **NEEDS REVIEW**. 0 file pakai `declare(strict_types=1)`; Pint fixer `fully_qualified_strict_types` aktif (auto-fix import) tapi bukan `declare` directive. Politik eksplisit tidak paksa — tersisa OPEN, keputusan tim.
+* [✓] CODE-03 — Review dead code / unused code — **VERIFIED no change**. `show` controller methods sudah dihapus (RBAC); `unused imports` Pint fix bersih (FeatureFlagTest, UserManagementTest).
+* [✓] CODE-04 — Review naming and consistency — **VERIFIED no change**. Route names, permission names (`user.edit` vs `user.update`) — konsisten across route/FormRequest/seeder/view.
 
 # Phase 14 — Full Regression
 
@@ -261,4 +261,5 @@ Pending.
 | 2026-09-11 | P2   | VERIFIED | I18N-01..07: i18n dual-source + DB override + locale persistence verified (I18N-06 DEFERRED to API) |
 | 2026-09-11 | P2   | VERIFIED | LOG-01..06: error/HTTP logging, log viewer authz/search/filter, health gate, sensitive-data exclusion (10/10) |
 | 2026-09-11 | P2   | VERIFIED | NOTIFY-01..05 re-verified (real-time via LogAuthentication Auth Events; backfill idempotent; authz fail-fast) |
-| 2026-09-11 | P2   | VERIFIED | DB-01..08: model↔migration consistency, casts, FK, indexes, soft-delete, integrity (re-verified; migrate:fresh green)
+| 2026-09-11 | P2   | VERIFIED | DB-01..08: model↔migration consistency, casts, FK, indexes, soft-delete, integrity (re-verified; migrate:fresh green) |
+| 2026-09-11 | P2   | FIXED    | CODE-01: Pint auto-cleanup applied (20+ files style fixes); pint --test clean; subset tests 12/12 green (CODE-02 strict-types left NEEDS REVIEW)

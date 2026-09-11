@@ -17,7 +17,6 @@ class RoleObserver
      * exclusively by the controller — observer intentionally empty to prevent
      * double-audit rows on HTTP paths.
      */
-
     public function created(Role $role): void
     {
         // ponytail: non-HTTP fallback only; controller emits this for web/API.

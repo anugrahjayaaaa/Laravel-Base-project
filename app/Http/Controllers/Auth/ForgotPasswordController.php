@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\Auditable;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\PasswordEmailRequest;
 use App\Http\Requests\Auth\PasswordResetRequest;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +15,7 @@ use Illuminate\View\View;
 class ForgotPasswordController extends Controller
 {
     use Auditable;
+
     /**
      * Show the "forgot password" form.
      *

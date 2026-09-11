@@ -14,7 +14,6 @@ class UserObserver
      * `created` event as a NON-HTTP fallback (e.g. tinker / CLI seeders),
      * guarded so it does not double-log when a controller already did.
      */
-
     public function created(User $user): void
     {
         // ponytail: non-HTTP fallback only; controller emits user_created for web/API.

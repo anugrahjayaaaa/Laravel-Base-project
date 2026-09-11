@@ -16,7 +16,7 @@ class TranslationController extends Controller
 
     public function index(): View
     {
-        $lines = \Spatie\TranslationLoader\LanguageLine::query()
+        $lines = LanguageLine::query()
             ->when(request('q'), fn ($q, $s) => $q->where(function ($sq) use ($s) {
                 $sq->where('group', 'like', "%$s%")
                     ->orWhere('key', 'like', "%$s%")

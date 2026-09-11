@@ -10,6 +10,7 @@ use Tests\TestCase;
 class PlansBillingDisabledTest extends TestCase
 {
     use RefreshDatabase;
+
     public function test_plans_and_billing_features_are_disabled_by_default()
     {
         $this->assertFalse(Feature::active('plans'));

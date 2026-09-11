@@ -12,6 +12,7 @@ use Illuminate\View\View;
 class ProfileController extends Controller
 {
     use Auditable;
+
     public function show(): View
     {
         return view('profile.show', ['user' => auth()->user()]);

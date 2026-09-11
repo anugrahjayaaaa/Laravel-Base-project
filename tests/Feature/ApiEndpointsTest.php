@@ -104,7 +104,7 @@ it('logs session_invalidated when API lock is called', function () {
 
 it('logs session_logout_others from API session logout', function () {
     $u = User::where('email', 'admin@laravel-base.local')->first();
-    $sid = \Illuminate\Support\Str::random(40);
+    $sid = Str::random(40);
     DB::table('sessions')->insertOrIgnore([
         'id' => $sid,
         'user_id' => $u->id,

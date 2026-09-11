@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\Role;
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\DB;
 
 /**
  * User lifecycle operations shared by the web and API controllers

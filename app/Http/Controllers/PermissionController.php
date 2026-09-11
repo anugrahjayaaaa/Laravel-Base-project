@@ -15,7 +15,7 @@ use Illuminate\View\View;
 
 class PermissionController extends Controller
 {
-    use Sortable, Auditable;
+    use Auditable, Sortable;
 
     public function __construct(private BulkDeleteService $bulk) {}
 

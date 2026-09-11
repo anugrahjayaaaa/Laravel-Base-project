@@ -26,8 +26,7 @@ class LogViewerController extends Controller
         $q = trim((string) $request->get('q', ''));
         if ($q !== '') {
             $qLower = mb_strtolower($q);
-            $logs = array_filter($logs, fn ($e) =>
-                str_contains(mb_strtolower($e['text'] ?? ''), $qLower)
+            $logs = array_filter($logs, fn ($e) => str_contains(mb_strtolower($e['text'] ?? ''), $qLower)
                 || str_contains(mb_strtolower($e['in_file'] ?? ''), $qLower)
                 || str_contains(mb_strtolower($e['stack'] ?? ''), $qLower)
             );

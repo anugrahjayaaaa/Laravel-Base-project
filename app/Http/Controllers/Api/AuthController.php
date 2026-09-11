@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\Auditable;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginApiRequest;
 use App\Http\Requests\Auth\PasswordChangeRequest;
 use App\Models\User;
@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     use Auditable;
+
     private function resolveLoginField(string $identifier): string
     {
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {

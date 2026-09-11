@@ -2,7 +2,6 @@
 
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Laravel\Pennant\Feature;
 use Spatie\Activitylog\Models\Activity;
 

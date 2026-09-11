@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\Auditable;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\PasswordChangeRequest;
 use App\Http\Requests\Profile\ProfileUpdateRequest;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -21,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 class ProfileApiController extends Controller
 {
     use Auditable;
+
     /** Show own profile. */
     public function show(Request $request): JsonResponse
     {

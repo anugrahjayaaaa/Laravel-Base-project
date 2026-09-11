@@ -19,7 +19,7 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    use Sortable, Auditable;
+    use Auditable, Sortable;
 
     public function __construct(private UserService $users, private BulkDeleteService $bulk) {}
 

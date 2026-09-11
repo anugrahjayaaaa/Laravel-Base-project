@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\Auditable;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Rbac\RoleStoreRequest;
 use App\Http\Requests\Rbac\RoleUpdateRequest;
 use App\Http\Resources\RoleResource;
@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 class RoleApiController extends Controller
 {
     use Auditable;
+
     /**
      * Filter permission IDs through the plan's allowed_permissions snapshot.
      * Mirrors RoleController::filterPermissions — server-side enforcement, not
