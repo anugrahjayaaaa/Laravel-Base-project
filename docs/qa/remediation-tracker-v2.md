@@ -46,14 +46,14 @@
 
 # Phase 2 — Authorization / RBAC
 
-* [ ] RBAC-01 — Fix User resource authorization matrix
-* [ ] RBAC-02 — Fix Role resource authorization matrix
-* [ ] RBAC-03 — Fix Permission resource authorization matrix
-* [ ] RBAC-04 — Resolve permission naming consistency (`edit` vs `update`)
-* [ ] RBAC-05 — Verify IDOR / ownership authorization
-* [ ] RBAC-06 — Verify soft-deleted User / Role / Permission authorization
-* [ ] RBAC-07 — Verify superadmin authorization behavior
-* [ ] RBAC-08 — Verify role-permission assignment and effective permissions
+* [✓] RBAC-01 — Fix User resource authorization matrix — **FIXED**. Root cause: `Route::resource('users')` applied a single `can:user.view` to all methods (store/update/destroy all gated by view). Fix: split into explicit routes with per-method `can:user.create`/`can:user.edit`/`can:user.delete` + `feature:users` group. Tests: RbacTest `RBAC-01: user.view-only subscriber cannot mutate users`.
+* [✓] RBAC-02 — Fix Role resource authorization matrix — **FIXED**. Same root cause; explicit routes with `can:role.{create,edit,delete}` + `feature:roles` group. Tests: RbacTest `subscriber without role.create cannot create roles`.
+* [✓] RBAC-03 — Fix Permission resource authorization matrix — **FIXED**. Same pattern with `can:permission.{create,edit,delete}` + `feature:permissions` group. Tests: RbacTest covers permission search (403 on create/edit/delete by missing perm).
+* [✓] RBAC-04 — Resolve permission naming consistency (`edit` vs `update`) — **VERIFIED no change**. `user.edit`/`role.edit`/`permission.edit` used consistently across route middleware, FormRequest::authorize, seeder, and `@can`. Naming kept as-is (UI-friendly); not aligned to HTTP-verb `update` by design — documented in PermissionSeeder.
+* [✓] RBAC-05 — Verify IDOR / ownership authorization — **VERIFIED no change**. Resource routes use model-bound `{user}`/`{role}`/`{permission}`; self-mutate guarded in controller (`auth()->id()` checks on lock/destroy/forceDelete). Tests: `prevents deleting super-admin`, `RBAC-01`.
+* [✓] RBAC-06 — Verify soft-deleted User / Role / Permission authorization — **VERIFIED no change**. Restore/force-delete routes gated by distinct `can:*` permissions; controller uses `withTrashed()` lookups; `feature:*` kill-switch returns 404 before authz. Tests: RestorePermissionGateTest.
+* [✓] RBAC-07 — Verify superadmin authorization behavior — **VERIFIED no change**. Superadmin role `syncPermissions(Permission::all())`; all `can:` gates bypass. Tests: SuperadminBillingDashboardTest `superadmin can access enabled module routes`.
+* [✓] RBAC-08 — Verify role-permission assignment and effective permissions — **VERIFIED no change**. `RoleController::store/update` use `filterPermissions()` (plan-bounded subset for subscribers); `givePermissionTo`/`syncPermissions` consistent. Tests: `creates a role with permissions`, `subscriber with roles feature can create roles but permissions are filtered`.
 
 # Phase 3 — User Lifecycle
 

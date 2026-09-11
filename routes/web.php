@@ -55,27 +55,47 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Stub routes for sidebar links (filled in by later phases: users/roles/permissions/audit/profile/sessions/api-tokens)
-    // pennant: feature flag first (kill switch 404 wins), then permission gate
-    Route::get('/users', [UserController::class, 'index'])->name('users.index')->middleware(['feature:users', 'can:user.view']);
-    Route::resource('users', UserController::class)
-        ->except(['show'])
-        ->middleware(['feature:users', 'can:user.view']);
-    Route::post('/users/bulk', [UserController::class, 'bulk'])->name('users.bulk')->middleware(['feature:users', 'can:user.delete']);
-    Route::post('/users/{user}/restore', [UserController::class, 'restore'])->name('users.restore')->middleware(['feature:users', 'can:user.restore']);
-    Route::post('/users/{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.forceDelete')->middleware(['feature:users', 'can:user.force-delete']);
-    Route::post('/users/{user}/lock', [UserController::class, 'lock'])->name('users.lock')->middleware(['feature:users', 'can:user.lock']);
-    Route::post('/users/{user}/unlock', [UserController::class, 'unlock'])->name('users.unlock')->middleware(['feature:users', 'can:user.lock']);
-    Route::post('/users/{user}/reset-password', [UserController::class, 'sendResetPassword'])->name('users.reset-password')->middleware(['feature:users', 'can:user.edit']);
+    Route::middleware('feature:users')->group(function () {
+        Route::resource('users', UserController::class)->only(['index'])
+            ->middleware('can:user.view');
+        Route::get('users/create', [UserController::class, 'create'])->name('users.create')->middleware('can:user.create');
+        Route::post('users', [UserController::class, 'store'])->name('users.store')->middleware('can:user.create');
+        Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('can:user.edit');
+        Route::put('users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('can:user.edit');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->middleware('can:user.delete');
+        Route::post('/users/bulk', [UserController::class, 'bulk'])->name('users.bulk')->middleware(['can:user.delete']);
+        Route::post('/users/{user}/restore', [UserController::class, 'restore'])->name('users.restore')->middleware(['can:user.restore']);
+        Route::post('/users/{user}/force-delete', [UserController::class, 'forceDelete'])->name('users.forceDelete')->middleware(['can:user.force-delete']);
+        Route::post('/users/{user}/lock', [UserController::class, 'lock'])->name('users.lock')->middleware(['can:user.lock']);
+        Route::post('/users/{user}/unlock', [UserController::class, 'unlock'])->name('users.unlock')->middleware(['can:user.lock']);
+        Route::post('/users/{user}/reset-password', [UserController::class, 'sendResetPassword'])->name('users.reset-password')->middleware(['can:user.edit']);
+    });
 
-    Route::resource('roles', RoleController::class)->middleware(['feature:roles', 'can:role.view']);
-    Route::post('/roles/bulk', [RoleController::class, 'bulk'])->name('roles.bulk')->middleware(['feature:roles', 'can:role.delete']);
-    Route::post('/roles/{role}/restore', [RoleController::class, 'restore'])->name('roles.restore')->middleware(['feature:roles', 'can:role.restore']);
-    Route::post('/roles/{role}/force-delete', [RoleController::class, 'forceDelete'])->name('roles.forceDelete')->middleware(['feature:roles', 'can:role.force-delete']);
+    Route::middleware('feature:roles')->group(function () {
+        Route::resource('roles', RoleController::class)->only(['index'])
+            ->middleware('can:role.view');
+        Route::get('roles/create', [RoleController::class, 'create'])->name('roles.create')->middleware('can:role.create');
+        Route::post('roles', [RoleController::class, 'store'])->name('roles.store')->middleware('can:role.create');
+        Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit')->middleware('can:role.edit');
+        Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update')->middleware('can:role.edit');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy')->middleware('can:role.delete');
+        Route::post('/roles/bulk', [RoleController::class, 'bulk'])->name('roles.bulk')->middleware(['can:role.delete']);
+        Route::post('/roles/{role}/restore', [RoleController::class, 'restore'])->name('roles.restore')->middleware(['can:role.restore']);
+        Route::post('/roles/{role}/force-delete', [RoleController::class, 'forceDelete'])->name('roles.forceDelete')->middleware(['can:role.force-delete']);
+    });
 
-    Route::resource('permissions', PermissionController::class)->middleware(['feature:permissions', 'can:permission.view']);
-    Route::post('/permissions/bulk', [PermissionController::class, 'bulk'])->name('permissions.bulk')->middleware(['feature:permissions', 'can:permission.delete']);
-    Route::post('/permissions/{permission}/restore', [PermissionController::class, 'restore'])->name('permissions.restore')->middleware(['feature:permissions', 'can:permission.restore']);
-    Route::post('/permissions/{permission}/force-delete', [PermissionController::class, 'forceDelete'])->name('permissions.forceDelete')->middleware(['feature:permissions', 'can:permission.force-delete']);
+    Route::middleware('feature:permissions')->group(function () {
+        Route::resource('permissions', PermissionController::class)->only(['index'])
+            ->middleware('can:permission.view');
+        Route::get('permissions/create', [PermissionController::class, 'create'])->name('permissions.create')->middleware('can:permission.create');
+        Route::post('permissions', [PermissionController::class, 'store'])->name('permissions.store')->middleware('can:permission.create');
+        Route::get('permissions/{permission}/edit', [PermissionController::class, 'edit'])->name('permissions.edit')->middleware('can:permission.edit');
+        Route::put('permissions/{permission}', [PermissionController::class, 'update'])->name('permissions.update')->middleware('can:permission.edit');
+        Route::delete('permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy')->middleware('can:permission.delete');
+        Route::post('/permissions/bulk', [PermissionController::class, 'bulk'])->name('permissions.bulk')->middleware(['can:permission.delete']);
+        Route::post('/permissions/{permission}/restore', [PermissionController::class, 'restore'])->name('permissions.restore')->middleware(['can:permission.restore']);
+        Route::post('/permissions/{permission}/force-delete', [PermissionController::class, 'forceDelete'])->name('permissions.forceDelete')->middleware(['can:permission.force-delete']);
+    });
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');

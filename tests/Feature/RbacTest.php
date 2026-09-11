@@ -44,6 +44,24 @@ it('subscriber without role.create permission cannot create roles', function () 
         ->assertForbidden();
 });
 
+it('RBAC-01: user.view-only subscriber cannot mutate users (create/edit/delete)', function () {
+    $subRole = Role::create(['name' => 'ro_user', 'guard_name' => 'web']);
+    $subRole->syncPermissions('user.view');
+    $plain = User::create([
+        'name' => 'Plain2', 'username' => 'plain2', 'email' => 'plain2@example.com',
+        'phone' => '+628****0010', 'password' => bcrypt('x'), 'email_verified_at' => now(),
+    ]);
+    $plain->assignRole($subRole);
+
+    $this->actingAs($plain);
+    // ponytail: user.view-only subscriber must be blocked from all user mutations.
+    $target = User::factory()->create(['username' => 'target'.time(), 'name' => 'T']);
+    $this->get(route('users.create'))->assertForbidden();
+    $this->post(route('users.store'), [])->assertForbidden();
+    $this->put(route('users.update', $target), ['name' => 'X', 'email' => $target->email, 'username' => $target->username])->assertForbidden();
+    $this->delete(route('users.destroy', $target))->assertForbidden();
+});
+
 it('subscriber with roles feature can create roles but permissions are filtered', function () {
     Plan::updateOrCreate(
         ['slug' => 'pro'],
