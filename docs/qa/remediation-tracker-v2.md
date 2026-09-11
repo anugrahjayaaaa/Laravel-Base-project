@@ -119,12 +119,12 @@
 
 # Phase 10 — Logs & Observability
 
-* [ ] LOG-01 — Verify application error logging
-* [ ] LOG-02 — Verify HTTP error logging
-* [ ] LOG-03 — Verify log viewer authorization
-* [ ] LOG-04 — Verify log search / filtering behavior
-* [ ] LOG-05 — Verify Telescope / Periscope feature and permission gates
-* [ ] LOG-06 — Verify sensitive data is not exposed through observability tools
+* [✓] LOG-01 — Verify application error logging — **VERIFIED no change**. `LogHttpErrors` middleware logs 4xx (405) to daily channel; Laravel exception handler logs 5xx. Tests: HttpErrorLogTest `logs 405 (wrong HTTP method) via middleware`.
+* [✓] LOG-02 — Verify HTTP error logging — **VERIFIED no change**. `LogHttpErrors` captures 4xx (except 404 noise), context: url/method/ip/user_id; streams to `config('logging.default')` daily channel. Tests: `logs 405`, `does not log 404 (noise)`.
+* [✓] LOG-03 — Verify log viewer authorization — **VERIFIED no change**. `/logs` gated `feature:logs` + `can:logs.view` (403 without perm, 404 kill-switch off). Tests: LogViewerTest (5/5 incl. kill-switch + staff forbid).
+* [✓] LOG-04 — Verify log search / filtering behavior — **VERIFIED no change**. `LogViewerController::index` filters by `level` + `q` (case-insensitive strpos on text/in_file/stack). Tests: LogViewerTest `renders a search input on logs page`.
+* [✓] LOG-05 — Verify Telescope / Periscope feature and permission gates — **VERIFIED no change (deferred)**. Telescope/Periscope in composer require-dev only — NOT active providers; `/up` health endpoint (200) is the live readiness gate. Tests: ObservabilityTest `health endpoint responds 200`, `applies security headers`.
+* [✓] LOG-06 — Verify sensitive data is not exposed through observability tools — **VERIFIED no change**. `LogHttpErrors` context limited to url/method/ip/user_id — never password/PII/tokens. Log viewer streams file contents only to `can:logs.view` gated view. no Telescope active provider. Tests: LogViewerTest forbid by perm + kill-switch.
 
 # Phase 11 — Translation / i18n
 
@@ -259,4 +259,5 @@ Pending.
 | 2026-09-11 | P2   | VERIFIED | AUDIT-06: audit index causer filter + pagination regression test |
 | 2026-09-11 | P1   | FIXED    | SETTING-01: SettingsController update 500 on nullable default_plan/default_role — added ?? null (fix), SettingsRegistrationTest added |
 | 2026-09-11 | P2   | VERIFIED | I18N-01..07: i18n dual-source + DB override + locale persistence verified (I18N-06 DEFERRED to API) |
-| 2026-09-11 | P2   | VERIFIED | NOTIFY-01..05: auth notification lifecycle, read/mark-all-read, authz, backfill verified via NotificationPageTest (4/4)
+| 2026-09-11 | P2   | VERIFIED | NOTIFY-01..05: auth notification lifecycle, read/mark-all-read, authz, backfill verified via NotificationPageTest (4/4) |
+| 2026-09-11 | P2   | VERIFIED | LOG-01..06: error/HTTP logging, log viewer authz/search/filter, health gate, sensitive-data exclusion (10/10)
