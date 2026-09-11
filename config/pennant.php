@@ -68,9 +68,9 @@ return [
         'api-tokens' => ['label' => 'API Tokens', 'group' => 'settings'],
         'translations' => ['label' => 'Translations', 'group' => 'settings'],
         'features' => ['label' => 'Features Management', 'group' => 'settings'], // toggle the Feature Management module itself
-        // Billing
-        'plans' => ['label' => 'Plans', 'group' => 'billing'],
-        'billing' => ['label' => 'Billing', 'group' => 'billing'],
+        // Billing (temporarily disabled — see docs/qa/remediation-tracker-v2.md)
+        'plans' => ['label' => 'Plans', 'group' => 'billing', 'disabled' => true],
+        'billing' => ['label' => 'Billing', 'group' => 'billing', 'disabled' => true],
     ],
 
 ];

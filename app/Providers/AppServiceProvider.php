@@ -73,8 +73,10 @@ class AppServiceProvider extends ServiceProvider
 
         // ponytail: declare every module feature flag so Pennant resolves it;
         // default ON. DB store persists toggles from the /features UI.
-        foreach (array_keys(config('pennant.features', [])) as $slug) {
-            Feature::define($slug, fn () => true);
+        // Flags marked 'disabled' in config/pennant.php default OFF (kill-switch).
+        foreach (config('pennant.features', []) as $slug => $meta) {
+            $off = $meta['disabled'] ?? false;
+            Feature::define($slug, fn () => ! $off);
         }
 
         Paginator::useBootstrap();
