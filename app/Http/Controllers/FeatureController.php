@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\Auditable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -9,6 +10,8 @@ use Laravel\Pennant\Feature;
 
 class FeatureController extends Controller
 {
+    use Auditable;
+
     public function index(): View
     {
         $order = ['access', 'monitoring', 'settings', 'billing', 'workspace', 'other'];
@@ -31,17 +34,21 @@ class FeatureController extends Controller
     {
         abort_unless(array_key_exists($slug, config('pennant.features', [])), 404);
 
-        $request->boolean('enabled')
+        $enabled = $request->boolean('enabled');
+        $enabled
             ? Feature::activate($slug)
             : Feature::deactivate($slug);
 
-        $label = featureLabel($slug);
+        $this->auditAction($enabled ? 'feature_enabled' : 'feature_disabled', $request->user(), [
+            'feature' => $slug,
+            'label' => featureLabel($slug),
+        ]);
 
         return redirect()->route('features.index')->with(
             'success',
-            $request->boolean('enabled')
-                ? __('messages.feature_enabled', ['label' => $label])
-                : __('messages.feature_disabled', ['label' => $label])
+            $enabled
+                ? __('messages.feature_enabled', ['label' => featureLabel($slug)])
+                : __('messages.feature_disabled', ['label' => featureLabel($slug)])
         );
     }
 }

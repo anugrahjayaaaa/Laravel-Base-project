@@ -31,7 +31,7 @@
     <div class="col-md-3">
         <div class="card shadow-sm text-center">
             <div class="card-body">
-                <div class="text-muted small">{{ __('messages.plans') }}</div>
+                <div class="text-muted small">{{ ui('plans') }}</div>
                 <div class="h4">{{ $planBreakdown->count() }}</div>
             </div>
         </div>
@@ -42,7 +42,7 @@
 <div class="card shadow-sm mb-4">
     <div class="table-responsive">
         <table class="table mb-0">
-            <thead><tr><th>{{ __('messages.plan') }}</th><th>{{ __('messages.active_licenses') }}</th></tr></thead>
+            <thead><tr><th>{{ ui('plan') }}</th><th>{{ __('messages.active_licenses') }}</th></tr></thead>
             <tbody>
                 @forelse($planBreakdown as $slug => $total)
                     <tr><td>{{ $slug }}</td><td>{{ $total }}</td></tr>
@@ -58,7 +58,7 @@
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover mb-0">
-            <thead><tr><th>{{ __('messages.invoice') }}</th><th>{{ __('messages.user') }}</th><th>{{ __('messages.plan') }}</th><th>{{ __('messages.amount') }}</th><th>{{ __('messages.status') }}</th><th>{{ __('messages.date') }}</th></tr></thead>
+            <thead><tr><th>{{ ui('invoice') }}</th><th>{{ ui('user') }}</th><th>{{ ui('plan') }}</th><th>{{ ui('amount') }}</th><th>{{ ui('status') }}</th><th>{{ ui('date') }}</th></tr></thead>
             <tbody>
                 @forelse($payments as $p)
                     <tr>
@@ -82,7 +82,7 @@
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover mb-0">
-            <thead><tr><th>{{ __('messages.license') }}</th><th>{{ __('messages.user') }}</th><th>{{ __('messages.plan') }}</th><th>{{ __('messages.expires') }}</th></tr></thead>
+            <thead><tr><th>{{ __('messages.license') }}</th><th>{{ ui('user') }}</th><th>{{ ui('plan') }}</th><th>{{ __('messages.expires') }}</th></tr></thead>
             <tbody>
                 @forelse($licenses as $l)
                     <tr>

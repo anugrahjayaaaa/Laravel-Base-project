@@ -28,12 +28,11 @@ it('creates a role with permissions', function () {
     expect($role->hasPermissionTo($perm->name))->toBeTrue();
 });
 
-it('subscriber on free plan cannot create roles (plan limit)', function () {
-    // free plan has no 'roles' feature -> can_create_roles is false
-    // ponytail: admin role has feature.manage (seeded); create a role with
-    // only role.create (no feature.manage) to simulate a subscriber
+it('subscriber without role.create permission cannot create roles', function () {
+    // role creation is gated by the `role.create` permission (FormRequest authz),
+    // not a separate plan flag (can_create_roles removed).
     $subRole = Role::create(['name' => 'sub_role', 'guard_name' => 'web']);
-    $subRole->syncPermissions(['role.create', 'role.view', 'user.view']);
+    $subRole->syncPermissions(['role.view', 'user.view']); // no role.create
     $plain = User::create([
         'name' => 'Plain', 'username' => 'plain', 'email' => 'plain@example.com',
         'phone' => '+628****0002', 'password' => bcrypt('x'), 'email_verified_at' => now(),
@@ -45,13 +44,31 @@ it('subscriber on free plan cannot create roles (plan limit)', function () {
         ->assertForbidden();
 });
 
+it('RBAC-01: user.view-only subscriber cannot mutate users (create/edit/delete)', function () {
+    $subRole = Role::create(['name' => 'ro_user', 'guard_name' => 'web']);
+    $subRole->syncPermissions('user.view');
+    $plain = User::create([
+        'name' => 'Plain2', 'username' => 'plain2', 'email' => 'plain2@example.com',
+        'phone' => '+628****0010', 'password' => bcrypt('x'), 'email_verified_at' => now(),
+    ]);
+    $plain->assignRole($subRole);
+
+    $this->actingAs($plain);
+    // ponytail: user.view-only subscriber must be blocked from all user mutations.
+    $target = User::factory()->create(['username' => 'target'.time(), 'name' => 'T']);
+    $this->get(route('users.create'))->assertForbidden();
+    $this->post(route('users.store'), [])->assertForbidden();
+    $this->put(route('users.update', $target), ['name' => 'X', 'email' => $target->email, 'username' => $target->username])->assertForbidden();
+    $this->delete(route('users.destroy', $target))->assertForbidden();
+});
+
 it('subscriber with roles feature can create roles but permissions are filtered', function () {
     Plan::updateOrCreate(
         ['slug' => 'pro'],
         [
             'name' => 'Pro', 'price_monthly' => 99000, 'is_active' => true,
             'billing_period' => 'monthly',
-            'limits' => ['max_members' => 5, 'max_roles' => 3, 'can_create_roles' => true, 'allowed_permissions' => ['user.view']],
+            'limits' => ['max_members' => 5, 'max_roles' => 3, 'allowed_permissions' => ['user.view']],
             'features' => ['users', 'roles'],
         ]
     );

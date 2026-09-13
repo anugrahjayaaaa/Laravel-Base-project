@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Controllers\Concerns\Sortable;
 use App\Http\Requests\BulkActionRequest;
 use App\Http\Requests\Rbac\RoleStoreRequest;
@@ -16,7 +17,7 @@ use Illuminate\View\View;
 
 class RoleController extends Controller
 {
-    use Sortable;
+    use Auditable, Sortable;
 
     public function __construct(private BulkDeleteService $bulk) {}
 
@@ -39,18 +40,14 @@ class RoleController extends Controller
 
     public function store(RoleStoreRequest $request): RedirectResponse
     {
-        // §11.4: super-admins (feature.manage) bypass plan role-creation limits
         $plan = $request->user()->can('feature.manage') ? null : PlanService::for();
-        if ($plan && ! $plan->canCreateRoles()) {
-            abort(403, 'Plan does not allow role creation.');
-        }
-
         $data = $request->validated();
 
         $role = Role::create(['name' => $data['name'], 'guard_name' => 'web']);
-        // §11.4: filter permission IDs to those allowed by the plan snapshot
         $perms = $this->filterPermissions($data['permissions'] ?? [], $plan);
         $role->syncPermissions($perms);
+
+        $this->audit($role, 'role_created', $request->user());
 
         return redirect()->route('roles.index')->with('success', __('messages.role_created'));
     }
@@ -65,17 +62,14 @@ class RoleController extends Controller
 
     public function update(RoleUpdateRequest $request, Role $role): RedirectResponse
     {
-        // §11.4: super-admins (feature.manage) bypass plan role-creation limits
         $plan = $request->user()->can('feature.manage') ? null : PlanService::for();
-        if ($plan && ! $plan->canCreateRoles()) {
-            abort(403, 'Plan does not allow role creation.');
-        }
-
         $data = $request->validated();
 
         $role->update(['name' => $data['name']]);
         $perms = $this->filterPermissions($data['permissions'] ?? [], $plan);
         $role->syncPermissions($perms);
+
+        $this->audit($role, 'role_updated', $request->user());
 
         return redirect()->route('roles.index')->with('success', __('messages.role_updated'));
     }
@@ -95,6 +89,7 @@ class RoleController extends Controller
             return [];
         }
         $allowedIds = Permission::whereIn('name', $allowedNames)->pluck('id')->all();
+
         return array_intersect($permIds, $allowedIds);
     }
 
@@ -119,6 +114,9 @@ class RoleController extends Controller
         if ($role->name === 'super-admin') {
             return redirect()->route('roles.index')->with('error', __('messages.cannot_delete_super_admin'));
         }
+
+        $this->audit($role, 'role_deleted', request()->user());
+
         $role->delete();
 
         return redirect()->route('roles.index')->with('success', __('messages.role_deleted'));
@@ -126,7 +124,11 @@ class RoleController extends Controller
 
     public function restore(int $id): RedirectResponse
     {
-        Role::withTrashed()->findOrFail($id)->restore();
+        $role = Role::withTrashed()->findOrFail($id);
+
+        $this->audit($role, 'role_restored', request()->user());
+
+        $role->restore();
 
         return redirect()->route('roles.index')->with('success', __('messages.role_restored'));
     }
@@ -136,7 +138,12 @@ class RoleController extends Controller
         if (Role::withTrashed()->findOrFail($id)->name === 'super-admin') {
             return redirect()->route('roles.index')->with('error', __('messages.cannot_permanently_delete_super_admin'));
         }
-        Role::withTrashed()->findOrFail($id)->forceDelete();
+
+        $role = Role::withTrashed()->findOrFail($id);
+
+        $this->audit($role, 'role_permanently_deleted', request()->user());
+
+        $role->forceDelete();
 
         return redirect()->route('roles.index')->with('success', __('messages.role_permanently_deleted'));
     }

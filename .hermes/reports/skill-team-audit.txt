@@ -1,0 +1,534 @@
+================================================================================
+PROJECT-SPECIFIC AGENT SKILLS AUDIT
+Laravel Base Project
+Scan date: 2026-09-04 | Branch: feature/general-fixes
+================================================================================
+
+================================================================================
+PART 1 — CUSTOM SKILLS INVENTORY
+================================================================================
+
+Project ini memiliki SATU skill project-specific:
+.hermes/skills/i18n-translation-audit/SKILL.md (4648 bytes, 103 lines)
+
+File ini TRACKED di git (bukan gitignored seperti memory mengindikasikan).
+
+SKILL YANG DIKLAIM OLEH USER TAPI TIDAK DITEMUKAN:
+- Architect skill          → NOT FOUND
+- Frontend skill           → NOT FOUND
+- Backend skill            → NOT FOUND
+- QA skill                 → NOT FOUND
+- DBA skill                → NOT FOUND
+
+CONCLUSION: Project ini memakai SATU agent (Hermes) yang memuat skills secara
+manual bila diperlukan. Tidak ada sistem tim agent terkoordinasi.
+
+================================================================================
+PART 2 — CUSTOM SKILL INSPECTION
+================================================================================
+
+---
+2.1 skill: i18n-translation-audit
+---
+
+Skill name: i18n-translation-audit
+Lokasi: .hermes/skills/i18n-translation-audit/SKILL.md
+
+1. Intended role:
+   - i18n translation key auditor — memastikan invariant bahwa setiap
+     translation key ada di EXACTLY satu lang file
+   - ui.php = interface chrome via ui()
+   - messages.php = domain/content via __('messages.*')
+   - Dipanggil bila menambah/memindahkan/mengaudit translation keys
+
+2. Responsibilities:
+   - Membaca docs/i18n.md sebelum edit
+   - Membaca kedua lang file yang disentuh
+   - Memastikan key tidak dublikat antar file (cross-file dupes)
+   - Memastikan key ada di exactly one file
+   - Audit: setiap ui() / __('messages.X') call di views resolve dengan benar
+   - Workflow ketika menambah key (langkah 1-5)
+   - Gotcha documentation (fallback traps, dynamic concat)
+
+3. Inputs:
+   - docs/i18n.md
+   - lang/{en,id}/{ui,messages}.php
+   - resources/views/ (semua blade)
+
+4. Outputs:
+   - Audit script (php -r inline) yang menghasilkan:
+     - cross-dupes: key in BOTH ui and messages
+     - dupes per file
+     - missing keys: ui()/__('messages.*') calls yang tidak resolve
+   - Workflow instruction untuk menambah key
+
+5. Required context:
+   - docs/i18n.md (wajib baca)
+   - lang/{en,id}/{ui,messages,validation,plans}.php
+   - LanguageLineSeeder (database/seeders/LanguageLineSeeder.php)
+   - spatie/translation-loader behavior
+
+6. Required tools:
+   - terminal (php -r audit script)
+   - read_file (ui.php, messages.php, docs/i18n.md)
+   - search_files (grep ui()/__( calls)
+   - write_file (jika fix lang files)
+   - terminal (db:seed)
+
+7. Files it may modify:
+   - lang/{en,id}/{ui,messages,plans,validation}.php (add/edit keys)
+   - resources/views/*.blade.php (call site fixes)
+   - database/seeders/LanguageLineSeeder.php (jika sync logic berubah)
+
+8. Files it must NOT modify:
+   - (eksplisit tidak disebut — tapi implisit: tidak punya akses ke
+     app/Services, app/Models, config/, routing)
+
+9. Dependencies on other skills:
+   - docs/i18n.md (dokumen, bukan skill)
+   - TIDAK bergantung pada skill lain secara eksplisit
+
+10. Output consumed by another skill:
+    - TIDAK ADA — ini skill audit, output-nya adalah report/konsole
+    - Rekomendasi fix jika ditemukan, tapi bukan contract formal
+
+11. Handoff instructions:
+    - TIDAK ADA explicit handoff
+    - Skill ini adalah auditor standalone, bukan bagian dari pipeline
+
+12. Definition of Done:
+    - TIDAK ADA explicit DoD
+    - Implisit: semua keys resolve, no cross-dupes
+    - "Run audit script, get 'none' / 'none' / 'none'"
+
+13. Verification requirements:
+    - php artisan db:seed --class=LanguageLineSeeder --force (sync DB)
+    - grep -rn "?? '" app/Http/Controllers/ resources/views/ (fallback audit)
+    - Audit script output: cross-dupes → none, missing keys → none
+
+14. Can run tests:
+    - Tidak secara eksplisit, tapi bisa trigger:
+      `php artisan db:seed --class=LanguageLineSeeder --force`
+    - TIDAK bisa run php artisan test (bukan test runner skill)
+
+15. Can inspect previous agent work:
+    - Bisa baca git diff, lang files, views
+    - TIDAK bisa inspect test results (bukan responsibility)
+
+16. Can detect conflicting requirements:
+    - Bisa mendeteksi key yang ada di ui.php vs messages.php (cross-dupes)
+    - Bisa mendeteksi call site yang pakai helper yang salah
+
+17. Can report blockers:
+    - Script akan output "missing keys: ..." jika ada
+    - Tapi tidak ada mekanisme formal untuk "block"
+
+18. Can reject invalid upstream artifacts:
+    - Bisa mendeteksi missing keys (audit = pass/fail)
+    - Tapi hanya report, tidak bisa auto-reject
+
+19. Behavior deterministic:
+    - ✅ YAS — audit script adalah deterministic
+    - Hasil sama setiap run (jika lang files tidak berubah)
+
+20. Determinism score: 10/10
+    - Script audit pure function of lang file content
+    - Tidak bergantung pada state eksternal
+
+---
+2.2 SKILL SCORES (0-10)
+---
+
+For skill: i18n-translation-audit
+
+Role clarity:        9/10 — sangat jelas (auditor, single purpose)
+Context requirements: 8/10 — butuh docs/i18n.md + lang files + seeder
+Output quality:      9/10 — skrip audit yang dapat dieksekusi
+Handoff quality:      5/10 — tidak ada handoff, ini terminal skill
+Contract awareness:  6/10 — sadar tentang ui() vs __('messages.*') invariant
+Verification:        8/10 — punya skrip audit + seeder sync
+Error handling:      7/10 — gotcha section menjelaskan edge cases
+Dependency awareness: 5/10 — butuh docs/i18n.md tapi tidak auto-load
+Consensus:            8/10 — deterministik, reproducible
+Team compatibility:  3/10 — tidak ada team, ini standalone auditor
+Overall: 6.7/10
+(Note: skor rendah karena konteks "team compatibility" tidak relevan —
+ ini single-agent, bukan tim agent)
+
+================================================================================
+PART 3 — CROSS-AGENT COMPATIBILITY ANALYSIS
+================================================================================
+
+Karena project ini memakai SATU agent (Hermes) dan SATU skill custom,
+pertanyaan "cross-agent compatibility" sebagian besar N/A. Tapi kita bisa
+analisis apakah skill ini kompatibel dengan cara kerja Hermes.
+
+---
+3.1 SKILL → AGENT COMPATIBILITY
+---
+
+Hermes agent characteristics:
+- Single agent, full toolset (terminal, file, browser, memory, skills)
+- Ponytail plugin active (lazy, root-cause, minimal diffs)
+- Memory persisten untuk user preferences
+- Verification gate: php artisan test (user memory: "verify before done")
+
+Skill i18n-translation-audit compatibility:
+- ✅ Skill ini BISA dijalankan oleh Hermes (punya terminal)
+- ✅ Skill memberi audit script yang bisa dijalankan
+- ✅ Skill aware of i18n dual-source invariant (user preference di memory)
+- ✅ Skill aware of fallback traps (__ ?? '...') — sesuai memory user
+- ❌ Skill tidak memiliki access ke "project context" otomatis —
+  user harus panggil skill_view() manual
+- ❌ Skill tidak memiliki "Definition of Done" formal — rely pada user judgment
+- ❌ Skill tidak bisa run php artisan test untuk verifikasi behavior —
+  hanya bisa audit lang files secara statis
+
+---
+3.2 SKILL → DOCS COMPATIBILITY
+---
+
+Skill memakai: docs/i18n.md, docs/coding-standard.md (via memory)
+- ✅ Konsisten: skill memverifikasi invariant dari memory
+- ✅ Skill aware of spatie language_lines DB override behavior
+- ✅ Skill aware of seeder idempotency (insert/update + delete stale)
+- ❌ Skill tidak merujuk ke docs/api.md — i18n untuk API juga perlu audit
+  (__('messages.*') dipakai di API controller)
+
+Audit validasi: skill sudah benar memverifikasi invariant yang user inginkan.
+Tidak ada konflik antara skill dan dokumen.
+
+================================================================================
+PART 4 — MISSING ROLES / SKILLS
+================================================================================
+
+Berdasarkan tugas audit yang diminta (Architect, DBA, Backend, Frontend, QA),
+project ini TIDAK memiliki skill-agent terpisah untuk peran-peran ini.
+Semua ditangani oleh SATU agent (Hermes) dengan memory context.
+
+Yang HILANG (relative ke sistem multi-agent team yang diminta):
+
+A. Missing contracts
+   - API contract (docs/api.md ada tapi tidak ada JsonSchema/OpenAPI enforcement)
+   - Database contract (migration = schema of truth, tapi tidak ada formal schema doc)
+   - Handoff contract antara phase (tidak ada — satu agent satu sesi)
+
+B. Missing handoff protocols
+   - TIDAK ADA — satu agent, tidak perlu handoff
+   - TAPI: ini berarti knowledge transfer hanya via memory + docs + code
+
+C. Conflicting responsibilities
+   - N/A — hanya satu skill
+
+D. Overlapping responsibilities
+   - N/A — hanya satu skill
+
+E. Responsibilities that nobody owns
+   - Static analysis (PHPStan/Psalm) — tidak ada skill, dilakukan manual
+   - CI/CD orchestration — tidak ada skill, not even a plugin
+   - Architecture decision tracking — docs/adr.md (manual), tidak ada skill
+   - Performance optimization — database-optimizer skill ada (global) tapi
+     tidak ada di .hermes/skills/ — harus manual load
+
+F. Skills that are too broad
+   - i18n-translation-audit: N/A (terfokus)
+
+G. Skills that are too vague
+   - i18n-translation-audit: cukup jelas — punya skrip audit + workflow steps
+
+H. Skills that rely on implicit assumptions
+   - Skill mensyaratkan docs/i18n.md dibaca dulu, tapi tidak bisa memaksa
+   - Skill mensyaratkan lang files ada, tapi tidak ada check untuk file missing
+   - Skill menggunakan `array_intersect(array_keys($u), array_keys($m))` —
+     asumsi kedua file sempre valid PHP array yang bisa di-require
+
+I. Skills that can declare success without verification
+   - Skill hanya output audit — "none" = pass. Tapi tidak verifikasi behavior
+     runtime (e.g. spatie loader fallback behavior di production)
+
+J. Skills that can introduce architecture drift
+   - N/A — skill ini read-only auditor
+
+K. Skills that can overwrite another agent's decisions
+   - N/A — hanya satu skill
+
+L. Missing integration role
+   - TIDAK ADA integration role — Hermes satu agent yang integrasikan sendiri
+
+M. Missing orchestration role
+   - TIDAK ADA orchestration role — Hermes satu agent yang orkestrasikan sendiri
+   - Plugin agency-agents-router ada tapi TIDAK digunakan di project ini
+
+N. Missing reviewer role
+   - TIDAK ADA reviewer role otomatis — review manual via GitHub PR
+
+================================================================================
+PART 5 — SKILL SCORE SUMMARY
+================================================================================
+
+skill: i18n-translation-audit
+  Role clarity:            9/10
+  Context requirements:    8/10
+  Output quality:          9/10
+  Handoff quality:         5/10
+  Contract awareness:      6/10
+  Verification:            8/10
+  Error handling:          7/10
+  Dependency awareness:    5/10
+  Consensus:               8/10
+  Team compatibility:      3/10 (N/A — single agent)
+  OVERALL:                 6.7/10
+
+================================================================================
+PART 6 — CROSS-AGENT COMPATIBILITY ANALYSIS
+================================================================================
+
+Karena satu agent + satu skill, pertanyaan "cross-agent" sebagian besar N/A.
+Tapi kita evaluasi apakah sistem saat ini KOORDINAT dengan kebutuhan tim:
+
+ARCHITECT → DBA:
+  - NOT APPLICABLE — tidak ada role terpisah
+  - Architecture decisions ada di docs/architecture.md + docs/adr.md
+  - Schema ada di database/migrations/ — tercatat
+  - TAPI: plan-limits-design.md dan licensing-and-billing.md ada tapi
+    tidak ada cross-reference yang konsisten (§11.4 vs PlanService::filterPermissions)
+
+ARCHITECT → BACKEND:
+  - NOT APPLICABLE — tidak ada role terpisah
+  - API contract ada di docs/api.md
+  - TAPI: docs/api.md tidak lengkap (tidak menyebutkan /admin/billing,
+    /billing/webhook, /billing/invoice)
+  - Backend bisa berbuat salah karena dokumen tidak lengkap
+
+ARCHITECT → FRONTEND:
+  - NOT APPLICABLE — tidak ada role terpisah
+  - UI spec ada di docs/frontend-theme.md + docs/i18n.md
+  - TAPI: tidak ada formal UI contract untuk API responses
+  - Frontend bisa "menginvent" behavior karena tidak ada spec yang ketat
+
+DBA → BACKEND:
+  - NOT APPLICABLE — tidak ada role terpisah
+  - Schema = migration (source of truth)
+  - Backend bisa lihat migrasi langsung
+  - TAPI: tidak ada formal schema validation — backend dev harus
+    membaca migration manual
+
+BACKEND → FRONTEND:
+  - NOT APPLICABLE — tidak ada role terpisah
+  - Web controller = Blade view direct pass
+  - API controller = JsonResponse / JsonResource
+  - TAPI: response format tidak standard (UserApiController pakai getData(true))
+  - ❌ Inconsistency: UserApiController vs FeatureApiController response format
+
+BACKEND/FRONTEND → QA:
+  - NOT APPLICABLE — tidak ada role terpisah
+  - Test ada di tests/Feature/ (Pest, 140 tests)
+  - TAPI: QA tidak ada — testing dilakukan oleh developer
+  - TIDAK ADA acceptance criteria formal yang dapat QA
+  - TIDAK ADA E2E test untuk frontend
+  - SQLite in-memory vs MySQL production mismatch
+
+QA → DEVELOPMENT:
+  - NOT APPLICABLE — tidak ada role terpisah
+  - Tidak ada bug tracking system kecuali GitHub issues
+  - Tidak ada formal bug report template
+  - TIDAK ADA regression test requirement di workflow
+
+================================================================================
+PART 7 — TOP 10 WEAKNESSES
+================================================================================
+
+1. Single-agent bottleneck: satu AI harus tangani semua fase (architect,
+   backend, frontend, QA) — tidak ada parallelisasi, tidak ada cross-check.
+
+2. No formal API contract: docs/api.md tidak lengkap, tidak ada OpenAPI
+   enforcement di code — backend bisa implement di luar docs tanpa deteksi.
+
+3. No static analysis: tidak ada PHPStan/Psalm — typo (seperti SessionController
+   missing Auth facade) lolos ke runtime. INI BUG AKTIF.
+
+4. Docs vs code drift: subscriber RBAC enforcement
+   (PlanService::filterPermissions) ada di kode tapi dokumen katakan "not yet built".
+
+5. Response format inconsistency: UserApiController pakai ->response()->getData(true)
+   workaround, format berbeda dari controller API lain.
+
+6. No CI/CD: tidak ada GitHub Actions workflow, tidak ada Docker di repo,
+   build/deployment process tidak otomatis.
+
+7. Environment mismatch: SQLite (test) vs MySQL (production) — query
+   MySQL-specific bisa lolos test.
+
+8. No E2E / integration test: tidak ada Cypress/Pest Dusk untuk frontend,
+   tidak ada API contract validation.
+
+9. Missing .env.example vars: BILLING_FAKE, BILLING_GATEWAY, BILLING_GATEWAY_URL
+   tidak ada di .env.example.
+
+10. No formal phase gate: tidak ada check mekanisme antar fase (scan → plan →
+    code → test → review → done). Tergantung user judgment + ponytail plugin.
+
+================================================================================
+PART 8 — RECOMMENDED CHANGES
+================================================================================
+
+P0 — Critical:
+
+1. Fix SessionController missing Auth facade import (BUG AKTIF)
+   - Problem: Auth::logoutOtherDevices() throws undefined class
+   - Fix: Add `use Illuminate\Support\Facades\Auth;`
+   - Owner: Hermes agent — P0
+   - Files: app/Http/Controllers/SessionController.php
+   - Verify: php artisan test
+
+2. Add PHPStan static analysis
+   - Problem: Typos lolos ke runtime
+   - Fix: Tambah PHPStan di composer.json + CI workflow
+   - Owner: Hermes agent
+   - Files: composer.json, .github/workflows/ci.yml
+   - Verify: vendor/bin/phpstan analyse
+
+P1 — High:
+
+3. Standardize API response format
+   - Problem: getData(true) workaround → inconsistent pagination
+   - Fix: Buat ApiResource trait, replace semua pattern
+   - Owner: Hermes agent
+   - Files: app/Http/Resources/, Api controllers
+   - Verify: ApiEndpointsTest
+
+4. Sync docs vs code (subscriber RBAC)
+   - Problem: docs katakan "not yet built" tapi filterPermissions ada
+   - Fix: Update docs/licensing-and-billing.md §11.4
+   - Owner: Hermes agent
+   - Files: docs/licensing-and-billing.md, docs/CONTRIBUTING.md
+   - Verify: grep match
+
+5. Complete .env.example
+   - Problem: Missing billing env vars
+   - Fix: Tambah BILLING_FAKE, BILLING_GATEWAY, BILLING_GATEWAY_URL
+   - Owner: Hermes agent
+   - Files: .env.example
+   - Verify: grep config keys vs .env.example
+
+P2 — Medium:
+
+6. Add MySQL integration test
+   - SQLite vs MySQL mismatch
+   - Fix: CI matrix dengan MySQL
+   - Owner: Hermes agent
+
+7. Refactor static service methods
+   - Sulit testing/mock
+   - Fix: instance methods + DI
+   - Owner: Hermes agent
+
+Karena satu agent, konsep "tim agent" (Architect/DBA/Backend/Frontend/QA)
+tidak berlaku. Rekomendasi untuk tim agent bersifat hipotetis.
+
+================================================================================
+PART 9 — CURRENT STATE SUMMARY
+================================================================================
+
+1. CURRENT SKILL ARCHITECTURE
+   - 1 project skill (i18n-translation-audit) — auditor standalone, sangat baik
+   - 77+ global skills (di ~/.hermes/skills/) — tersedia tapi manual load
+   - Tidak ada tim agent — satu Hermes agent yang tangani semua
+   - Plugin: Ponytail (auto), Agency-agents-router (tersedia tapi tidak dipakai)
+   - Memory: MEMORY.md + USER.md — user preferences + context
+
+2. SKILL DEPENDENCY GRAPH
+   ```
+   i18n-translation-audit (standalone)
+     ├── docs/i18n.md (read)
+     ├── lang/{en,id}/{ui,messages,validation,plans}.php (read/modify)
+     ├── resources/views/*.blade.php (read/modify)
+     ├── database/seeders/LanguageLineSeeder.php (read)
+     └── spatie/translation-loader (runtime)
+   ```
+   TIDAK ada dependency antar skills — ini satu-satunya project skill.
+
+3. CURRENT HANDOFF FLOW
+   TIDAK ADA — satu agent, satu sesi, tidak ada handoff.
+   Flow: User request → Hermes scan (docs+code) → load skill (if relevant) →
+   implement → verify (test+pint) → commit → PR → user review.
+
+4. CONFLICTS BETWEEN SKILLS
+   TIDAK ADA — hanya satu project skill, tidak ada konflik.
+
+5. MISSING RESPONSIBILITIES
+   - Static analysis (PHPStan) — manual
+   - CI/CD orchestration — manual/not present
+   - Architecture decision tracking — docs/adr.md (manual)
+   - Performance optimization — database-optimizer skill (global, manual load)
+   - Code review — manual via GitHub PR
+   - Integration testing — manual
+
+6. PROPOSED TARGET SKILL ARCHITECTURE
+   Untuk satu agent ini, "target architecture" berarti:
+   - Tetap pakai satu agent (sesuai kenyataan)
+   - Tambah automation untuk:
+     a) Static analysis gate (PHPStan) — otomatis sebelum test
+     b) MySQL test env — CI matrix
+     c) API contract validation — OpenAPI enforcement
+     d) Phase gate workflow — dokumentasi, bukan skill baru
+   - Skill i18n-translation-audit: sudah optimal, tidak perlu diubah
+
+7. RECOMMENDED CONTRACTS / ARTIFACTS
+   - API contract: OpenAPI spec (generate dari scribe, enforce di CI)
+   - Migration contract: schema dump + validation
+   - Response format contract: standardized ApiResource
+   - Phase gate contract: documented checklist (DoD per PR)
+
+8. RECOMMENDED ORCHESTRATION WORKFLOW
+   ```
+   User request
+     → context scan (AGENTS.md + docs)
+     → skill load (if relevant)
+     → plan (todo_list)
+     → scan code (read/search/grep)
+     → implement (patch/write)
+     → lint (pint)
+     → static analysis (phpstan) ← TAMBAHAN
+     → test (php artisan test)
+     → MySQL test (CI matrix) ← TAMBAHAN
+     → commit + PR
+     → user review
+   ```
+
+================================================================================
+FINAL ASSESSMENT
+================================================================================
+
+Project ini tidak memiliki sistem "tim agent" (Architect/DBA/Backend/Frontend/QA).
+Ini adalah SATU agent (Hermes) yang ditunjang oleh:
+- 1 project-specific skill (i18n-translation-audit) yang HANDPROCKET
+- 77 global skills yang tersedia via manual load
+- Ponytail plugin untuk lazy coding discipline
+- Memory persisten untuk user preferences
+- Dokumentasi komprehensif (18 docs + ADR)
+
+Skill i18n-translation-audit (6.7/10) adalah auditor standalone yang sangat baik
+dan konsisten dengan user preferences. Tapi tidak ada skill untuk:
+- Architectura decision enforcement
+- CI/CD orchestration
+- Static analysis
+- Integration testing
+- API contract validation
+
+Semua ditangani manual oleh Hermes agent, yang menjadi bottleneck.
+
+Ponytail assessment: project ini sudah cukup baik untuk satu agent.
+Skill i18n-translation-audit adalah contoh skill yang "just right" —
+foced, deterministic, executable, documented.
+
+Yang sebenarnya butuh perbaikan bukan sistem skill, tapi:
+1. Bug aktif di SessionController (missing Auth import)
+2. Tambah PHPStan sebagai gate
+3. Sync docs vs code
+4. Standardisasi API response format
+
+Code first → skipped: [architect/dba/qa/frontend skill teams], add when:
+[user switches to orchestrated multi-agent system].
+
+================================================================================

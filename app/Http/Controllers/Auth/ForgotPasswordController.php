@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\PasswordEmailRequest;
 use App\Http\Requests\Auth\PasswordResetRequest;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class ForgotPasswordController extends Controller
 {
+    use Auditable;
+
     /**
      * Show the "forgot password" form.
      *
@@ -42,17 +45,20 @@ class ForgotPasswordController extends Controller
             $request->validated()
         );
 
+        // ponytail: broker emits stdlib 'passwords.*' status keys (e.g.
+        // 'passwords.user', 'passwords.throttled'). Map every one to a
+        // project message key (lang/{en,id}/messages.php) so no raw key
+        // ever reaches the view — there is a single source of truth.
         if ($status === Password::RESET_LINK_SENT) {
-            // ponytail: broker does not fire an event for "link requested"; log it so audit trail is complete
-            activity()
-                ->withProperties(['ip' => $request->ip(), 'user_agent' => $request->userAgent(), 'email' => $request->email])
-                ->log('password_reset_request');
+            $this->auditAction('password_reset_request', $request->user(), [
+                'email' => $request->email,
+            ]);
 
-            return back()->with('status', __($status));
+            return back()->with('status', __('messages.reset_link_sent_simple'));
         }
 
         throw ValidationException::withMessages([
-            'email' => __($status),
+            'email' => $this->statusMessage($status),
         ]);
     }
 
@@ -89,11 +95,30 @@ class ForgotPasswordController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return redirect()->route('login')->with('status', __($status));
+            return redirect()->route('login')->with('status', __('messages.password_changed'));
         }
 
         throw ValidationException::withMessages([
-            'email' => __($status),
+            'email' => $this->statusMessage($status),
         ]);
+    }
+
+    /**
+     * Map every stdlib Password broker status key to a project message key.
+     *
+     * Ponytail: one mapper for all 5 broker statuses (sent / reset /
+     * throttled / invalid_user / invalid_token). Never interpolates the
+     * raw 'passwords.*' value — the view only ever sees resolved text.
+     */
+    private function statusMessage(string $status): string
+    {
+        return match ($status) {
+            Password::RESET_LINK_SENT => __('messages.reset_link_sent_simple'),
+            Password::RESET_THROTTLED => __('messages.reset_link_throttled'),
+            Password::PASSWORD_RESET => __('messages.password_changed'),
+            Password::INVALID_USER => __('messages.reset_invalid_user'),
+            Password::INVALID_TOKEN => __('messages.reset_invalid_token'),
+            default => __('messages.could_not_send_reset_link'),
+        };
     }
 }

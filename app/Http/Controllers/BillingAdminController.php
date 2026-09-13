@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\License;
 use App\Models\Payment;
-use App\Models\Plan;
 use App\Models\User;
 use Illuminate\View\View;
 

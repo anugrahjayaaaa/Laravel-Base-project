@@ -19,7 +19,7 @@
                                     <span class="me-2"><i class="bi bi-geo-alt"></i> {{ $n->data['ip'] }}</span>
                                 @endif
                                 @if ($n->read_at)
-                                    <span>read {{ $n->read_at->diffForHumans() }}</span>
+                                    <span>{{ ui('read') }} {{ $n->read_at->diffForHumans() }}</span>
                                 @else
                                     <span class="text-primary fw-medium">{{ ui('unread') }}</span>
                                 @endif

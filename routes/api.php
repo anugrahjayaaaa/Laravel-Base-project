@@ -59,14 +59,20 @@ Route::prefix('v1')->group(function () {
 
         // Users (user.*)
         Route::apiResource('users', UserApiController::class)->middleware('can:user.view');
-        Route::post('users/{user}/lock', [UserApiController::class, 'lock'])->middleware('can:user.update');
-        Route::post('users/{user}/unlock', [UserApiController::class, 'unlock'])->middleware('can:user.update');
+        Route::post('users/{user}/lock', [UserApiController::class, 'lock'])->middleware('can:user.lock');
+        Route::post('users/{user}/unlock', [UserApiController::class, 'unlock'])->middleware('can:user.lock');
         Route::post('users/{user}/reset-password', [UserApiController::class, 'sendResetPassword'])->middleware('can:user.update');
+        Route::post('users/{user}/restore', [UserApiController::class, 'restore'])->middleware('can:user.manage');
+        Route::delete('users/{user}/force-delete', [UserApiController::class, 'forceDelete'])->middleware('can:user.manage');
 
         // Roles (role.*)
         Route::apiResource('roles', RoleApiController::class)->middleware('can:role.view');
+        Route::post('roles/{id}/restore', [RoleApiController::class, 'restore'])->middleware('can:role.manage');
+        Route::delete('roles/{id}/force-delete', [RoleApiController::class, 'forceDelete'])->middleware('can:role.manage');
 
         // Permissions (permission.*)
         Route::apiResource('permissions', PermissionApiController::class)->middleware('can:permission.view');
+        Route::post('permissions/{permission}/restore', [PermissionApiController::class, 'restore'])->middleware('can:permission.manage');
+        Route::delete('permissions/{permission}/force-delete', [PermissionApiController::class, 'forceDelete'])->middleware('can:permission.manage');
     });
 });

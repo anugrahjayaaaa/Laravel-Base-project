@@ -22,7 +22,7 @@ class ProfileUpdateRequest extends FormRequest
 
         return [
             'name' => 'required|string|max:255',
-            'phone' => ['nullable', 'string', 'max:255', Rule::unique('users', 'phone')->ignore($userId)],
+            'phone' => ['nullable', 'string', 'max:255', 'regex:/^\+?[0-9\s\-\(\)]+$/', Rule::unique('users', 'phone')->ignore($userId)],
         ];
     }
 }

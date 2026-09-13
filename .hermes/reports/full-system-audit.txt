@@ -1,0 +1,1051 @@
+================================================================================
+AGENT SYSTEM & PROJECT AUDIT REPORT
+Laravel Base Project
+Scan date: 2026-09-04 | Branch: feature/general-fixes
+================================================================================
+
+================================================================================
+PART 1 — AGENT SYSTEM
+================================================================================
+
+---
+1.1 THE AGENT (HERMES)
+---
+
+Hermes adalah satu model CLI agent — bukan sistem multi-agent terorchestrasi.
+
+Model utama: poolside/laguna-s-2.1:free (via Nous Research provider)
+Fallback provider: syngts.hermes.local.9router (localhost:20128/v1)
+
+Konfigurasi utama (~/.hermes/config.yaml):
+- agent.max_turns: 150
+- agent.verbose: false
+- agent.reasoning_effort: medium
+- Plugins aktif: agency-agents-router, ponytail
+- Terminal backend: local, timeout 180s, persistent cwd
+- Web backend: firecrawl, use_gateway: true
+- Browser backend: browser-use, cloud_provider, use_gateway
+- Memory: enabled, 2200 char (notes), 1375 char (user profile)
+- Compression: enabled, threshold 0.5, target ratio 0.2
+
+Toolset tersedia:
+- browser_exec          — drive web browser via Browser Use CLI
+- clarify               — bertanya ke user (1-5 pertanyaan per turn)
+- delegate_task         — spawn subagent terisolasi (max 10 paralel)
+- execute_code          — Python persistent session (stdlib + Hermes deps)
+- memory                — persistent memory (user notes + user profile)
+- patch/read_file/write_file/search_files — file manipulation
+- terminal              — shell commands (persistent, cwd persisten)
+- todo_list             — task tracking
+- tool_search/tool_describe/tool_call — lazy-loaded deferred tools
+- vision_analyze        — load gambar untuk analisis
+- web_search/web_extract — pencarian & ekstraksi web
+- text_to_speech        — TTS
+
+Deferred tools (dimuat via tool_search):
+- agency_agents tools (4): delegate, inspect, load, search
+- computer_use (1): desktop automation via cua-driver
+- cronjob (1): schedule jobs
+- image_gen (1): generate images
+- terminal tools (1): process_manage (poll/wait/kill)
+
+---
+1.2 SKILLS SYSTEM
+---
+
+Hermes memakai sistem skill-based — dokumen prosedjural (SKILL.md) yang dapat
+dimuat via skill_view() dan dikelola via skill_manage().
+
+Lokasi skill:
+1. ~/.hermes/skills/ — 77 skill global (symlink ke .agents/skills/ untuk sebagian)
+2. .hermes/skills/ di project repo — gitignored, project-scoped
+   (sesuai keinginan user: "repo-specific skills PROJECT-SCOPED")
+
+Skema skill:
+- Setiap skill = folder dengan SKILL.md + optional references/, templates/, scripts/
+- Skill dimuat manual via skill_view(name) — tidak otomatis aktif
+- Skill dapat memiliki frontmatter (trigger, kategori, deskripsi)
+- Ada .hermes/skills/i18n-translation-audit/ di project ini (gitignored)
+
+Skill yang tersedia (77 total) dikelompokkan:
+- Backend Laravel (20+): laravel/* (sub-skills), laravel-backend-patterns,
+  laravel-base-fork-feature-dev, code-review-and-quality, backend-patterns,
+  database, database-optimizer, mysql
+- Frontend (12+): frontend, frontend-design, design-taste-frontend,
+  tailwind-css-patterns, image-to-code, stitch-design-taste, penpot-uiux-design,
+  minimalist-ui, industrial-brutalist-ui, ui-ux-pro-max,
+  interaction-design, redesign-existing-projects
+- Workflow/DevOps (8): dev-lifecycle, github (sub-skills), cicd-deployment,
+  laravel-verification, documentation, observability
+- Specialized domains (17+): saham_idn, data-science (sub-skills),
+  stock-app (sub-skills), stock-app-ui, stock-app-code-style,
+  stock-app-stocklist-sync, stock-app-stockbit-integration,
+  stock-app-ipott-integration, ipot-stock-data, ipot-stock-scraping
+- Other (17+): accessibility, accessibility-compliance, apple (sub-skills),
+  creative (sub-skills), email (sub-skills), media (sub-skills),
+  mlops (sub-skills), note-taking (obsidian), productivity (sub-skills),
+  research (sub-skills), security-and-hardening, smart-home, social-media,
+  style (caveman, ponytail), web, web-design-guidelines, yuanbao
+
+---
+1.3 SHARED STATE / MEMORY
+---
+
+~/.hermes/memories/MEMORY.md (14 lines, 2168 chars):
+- User work-style: specs up front, propose A/B/C/D before code
+- Git workflow: feature/ branches, PR, merge after review, never main
+- Dev cycle: verify before done (php artisan test)
+- Laravel-native preference over hand-rolled
+- i18n dual-source: lang/{en,id}/{messages,ui,validation}.php + spatie language_lines
+- Repo-specific skills preference (project-scoped, gitignored)
+- View rules: split blade, audit views, fat controllers to service
+- i18n dual-source CONFIRMED (validation group synced)
+
+~/.hermes/memories/USER.md (6 lines, 1258 chars):
+- Nama: Jaya, backend dev 5+ tahun PHP/C#
+- Komersial: 'Helm' = Laravel 13 + Filament 5 SaaS (github.com/anugrahjayaaaa/Laravel-Jira)
+- User = super_admin (guard 'platform') di Helm SaaS
+- Helm: Laravel 13.26 + Filament 5.7, multi-tenant, tests 12/12 hijau
+- Kemampuan: Indonesian stock analysis
+
+.hermes/kanban.db — SQLite task DB, tapi kosong (belum ada task terdaftar)
+.hermes/cron/ — ada struktur (jobs.json, executions.db) tapi tidak ada job
+.hermes/state.db — state store (410MB — database state)
+.hermes/.hermes_history — 551KB conversation history
+
+---
+1.4 AGENT COMMUNICATION
+---
+
+- TIDAK ADA sistem message queue antar agen
+- Komunikasi satu-ke-satu via delegate_task (spawn subagent, return summary)
+- Memory adalah satu-satunya mekanisme state sharing persisten
+- Skill files berfungsi sebagai prosedur yang dapat dibagikan
+- Setiap subagent buta pada konteks sesi lain (harus pass everything via context)
+- TIDAK ADA feedback loop otomatis antar subagent
+
+---
+1.5 PLUGINS
+---
+
+1. agency-agents-router: Integrasi The Agency specialist roster — spawn specialist
+   agents untuk code review, planning, dll. Akses via agency_agents tool.
+2. ponytail: Lazy senior dev mode — linter, YAGNI, root-cause fixing,
+   minimal diffs. Diterapkan otomatis ke setiap sesi.
+   File: ~/.hermes/plugins/ponytail/SKILL.md (bukan skill biasa)
+
+================================================================================
+PART 2 — AGENT WORKFLOW
+================================================================================
+
+---
+WORKFLOW AKTUAL
+---
+
+User request
+    ↓
+AI baca konteks (AGENTS.md, CLAUDE.md, docs/*.md) [selalu pertama]
+    ↓
+AI scan kode (terminal, read_file, search_files, grep)
+    ↓
+AI cek skill relevan via skill_view(name) [jika tersedia]
+    ↓
+[UI tasks:] AI propose A/B/C/D + concern review [untuk flow/UI tasks]
+    ↓
+AI buat perubahan (patch, write_file)
+    ↓
+AI jalankan verifikasi: php artisan test, pint, php -l
+    ↓
+[UI tasks:] AI cek rendered HTML (serve/curl atau browser)
+    ↓
+AI commit + push + buat PR (terminal + gh CLI)
+    ↓
+User review PR di GitHub
+    ↓
+[Bug ditemukan:] user report → kembali ke scan
+    ↓
+Document update (docs/, ADR) jika behavior berubah
+
+---
+ARTIFACT & CONSUMPTION
+---
+
+| Artifact      | Ditempatkan         | Dikonsumsi oleh           |
+|---------------|---------------------|---------------------------|
+| Code changes  | Working branch      | Developer/user            |
+| Tests         | tests/Feature/      | php artisan test          |
+| Skill updates | ~/.hermes/skills/   | Agent di sesi berikutnya  |
+| Memory        | ~/.hermes/memories/ | Agent di sesi berikutnya  |
+| Reports       | .hermes/reports/    | Developer                 |
+| PRs           | GitHub              | Developer + tim           |
+| Changelog     | docs/feature-...-changelog.md | Developer    |
+
+---
+KARAKTERISTIK WORKFLOW
+---
+
+- TIDAK ADA fase perencanaan formal — AI langsung ke implementasi setelah scan
+- Task tracking manual via todo_list (opsional)
+- Branch management auto — AI memutuskan nama branch (kadang butuh koreksi)
+- Verification gate — AI wajib jalanin tes sebelum commit
+- TIDAK ADA code review agent — review manual via GitHub PR
+- TIDAK ADA integration testing otomatis — tergantung developer
+- TIDAK ADA contract antar fase — semua dalam satu sesi agent
+
+---
+WORKFLOW DIAGRAM
+---
+
+```
+            ┌──────────────────────────────────────────┐
+            │        USER REQUEST                    │
+            │  (e.g. "perbaiki views", "scan backend") │
+            └───────────────────┬──────────────────────┘
+                                │
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │  PHASE 1: CONTEXT SCAN                 │
+            │  • Baca AGENTS.md, CLAUDE.md            │
+            │  • Baca docs/*.md (README, PRD,        │
+            │    coding-standard, architecture, ...)  │
+            │  • Load skills via skill_view()         │
+            └───────────────────┬──────────────────────┘
+                                │
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │  PHASE 2: CODE SCAN                    │
+            │  • read_file, search_files, grep       │
+            │  • terminal: git log, find, ls         │
+            │  • Trace real flow end-to-end          │
+            └───────────────────┬──────────────────────┘
+                                │
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │  PHASE 3: ANALYZE & PROPOSE            │
+            │  [UI tasks]: propose A/B/C/D options   │
+            │  • Identify violations/concerns        │
+            │  • Check docs for conflict (docs win)  │
+            └───────────────────┬──────────────────────┘
+                                │
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │  PHASE 4: IMPLEMENT                    │
+            │  • patch / write_file                  │
+            │  • Create Form Requests, Services     │
+            │  • Follow coding-standard.md         │
+            └───────────────────┬──────────────────────┘
+                                │
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │  PHASE 5: VERIFY                       │
+            │  • php artisan test (or filter)       │
+            │  • php vendor/bin/pint --test          │
+            │  • php -l (syntax)                   │
+            │  • [UI] serve + curl/browser          │
+            └───────────────────┬──────────────────────┘
+                                │
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │  PHASE 6: COMMIT                       │
+            │  • git add + commit                    │
+            │  • git push origin feature/<name>      │
+            │  • gh pr create                        │
+            └───────────────────┬──────────────────────┘
+                                │
+                                ▼
+            ┌──────────────────────────────────────────┐
+            │  USER REVIEW PR                        │
+            │  (manual — no agent review)             │
+            └───────────────────┬──────────────────────┘
+                                │
+                    ┌───────────┴───────────┐
+                    │                      │
+                    ▼                      ▼
+    ┌────────────────────┐     ┌──────────────────────────┐
+    │  BUG FOUND          │     │  APPROVED → MERGE         │
+    │  → back to Scan    │     │  (user merges di GitHub) │
+    └────────────────────┘     └──────────────────────────┘
+```
+
+---
+FORMAL CONTRACT CHECK
+---
+
+- Formal contract antar phase: TIDAK ADA (semua dalam satu sesi)
+- Handoff protocol: TIDAK ADA (satu agent menyelesaikan semua)
+- Agent bisa declare done tanpa verifikasi: TIDAK — user memory menuntut "verify before done"
+- Agents bisa modify pekerjaan agent lain: TIDAK BERLAKU (satu agent)
+- Retry mechanism: ada — AI coba lagi jika tool gagal (guardrail: exact_failure after 5)
+- Bug-fix loop: manual — user report → AI scan → fix → test → PR
+- Regression testing: ya — php artisan test sebelum commit
+- Final integration step: TIDAK ADA otomatis
+- Final review step: manual via GitHub PR
+
+================================================================================
+PART 3 — SHARED MEMORY / STATE
+================================================================================
+
+SUMBER KEBAENARAN (Single source of truth):
+
+1. AGENTS.md — entry point untuk AI agent (33 lines)
+2. docs/README.md — single source of truth (44 lines)
+3. docs/*.md — dokumentasi terperinci per modul (18 file)
+4. docs/adr.md — Architecture Decision Records (56 lines, 10 ADR)
+5. ~/.hermes/memories/MEMORY.md — user preferences + conventions
+6. ~/.hermes/memories/USER.md — user profile (role, preferences, projects)
+
+DUPLICATED / CONFLICTING SOURCES:
+
+1. AGENTS.md vs docs/coding-standard.md
+   - Kedua file memiliki konten overlap (authz, validation, naming)
+   - AGENTS.md lebih singkat, coding-standard.md lebih detail
+   - AGENTS.md merujuk ke coding-standard.md
+   - ❌ AGENTS.md ada typo di line 21 (malformed markdown)
+     "**Rule:** permission + feature-flag gates belong on the ROUTE (`can:` + `feature:` middleware), never in a**"
+
+2. docs/api.md vs docs/api-mobile.md
+   - Keduanya mendokumentasikan API
+   - api.md = REST contract reference
+   - api-mobile.md = Sanctum Bearer flow + mobile-specific auth
+   - Ada duplikasi endpoint descriptions tapi tidak bertentangan
+
+3. docs/licensing-and-billing.md vs CONTRIBUTING.md
+   - licensing-and-billing.md §11.4: "subscriber RBAC enforcement: ... not yet built"
+   - TAPI PlanService::filterPermissions() ADA di RoleController — implementasi ke depan dokumentasi
+   - CONTRIBUTING.md §52 juga: "Currently open — plan limits are NOT enforced"
+
+4. .env.example vs config/billing.php
+   - config/billing.php memakai BILLING_FAKE, BILLING_GATEWAY, BILLING_GATEWAY_URL
+   - TAPI .env.example TIDAK punya ketiga variabel ini
+   - Ini documentation gap
+
+5. memory/README.md vs CONTRIBUTING.md
+   - Keduanya ada dokumentasi "Open items" terpisah
+   - README.md meletakkannya di bagian "LOCKED DECISIONS" + "§9b"
+   - CONTRIBUTING.md memiliki "Open items" section
+   - Ada sedikit redundancy tapi tidak konflik
+
+DECISIONS YANG ADA DI KODE TAPI TIDAK DIDOKUMENTASIKAN:
+
+1. PlanService::filterPermissions() di RoleController
+   - Logic subscriber RBAC enforcement (filter permissions via plan allowed_permissions)
+   - DIDOKUMENTASIKAN: "not yet built" di dokumen tapi IMPLEMENTED di kode
+2. BillingAdminController
+   - Admin billing dashboard
+   - DIDOKUMENTASIKAN: disebut di licensing-and-billing.md §12.2
+   - TAPI TIDAK didokumentasikan di docs/api.md
+3. SessionController pakai Auth::logoutOtherDevices()
+   - TIDAK DIDOKUMENTASIKAN: tidak clear di dokumen ini adalah intended behavior
+
+================================================================================
+PART 4 — PROJECT AUDIT
+================================================================================
+
+---
+ARCHITECTURE
+---
+
+Layered architecture (clean):
+  HTTP Layer (web Blade / API JSON)
+    → Controller (validate + dispatch)
+      → Service / Form Request / Observer
+        → Eloquent Models (SoftDeletes)
+          → MySQL (InnoDB, utf8mb4)
+
+Cross-cutting: auth, rbac(can: middleware), feature(feature: flag), log-activity, force-json
+
+Status: BAIK. Clean separation of concerns. Good dependency direction. Low coupling antar layer.
+
+---
+BACKEND
+---
+
+Controllers (17 custom):
+- PlanController, BillingController, BillingAdminController, UserController,
+  RoleController, PermissionController, FeatureController, TranslationController,
+  LogViewerController, NotificationController, LocaleController, SettingsController,
+  AuditController, ProfileController, DashboardController, LoginController (Auth),
+  ForgotPasswordController (Auth), RegisterController (Auth)
+- API: ApiTokenApiController, AuditApiController, AuthController, AuthApiController,
+  FeatureApiController, NotificationApiController, PermissionApiController,
+  ProfileApiController, RoleApiController, SessionApiController, UserApiController
+
+Controller issues:
+- ✅ Konsisten thin — logika di Services
+- ❌ UserController.lock/unlock/restore/forceDelete mengambil `int $id` bukan model binding
+  (line 72, 87, 106, 148, 155 — semua pakai int $id + findOrFail)
+- ❌ SessionController line 32: `Auth::logoutOtherDevices()` dipanggil tapi
+  `use Illuminate\Support\Facades\Auth;` TIDAK di-import → RUNTIME ERROR
+- ❌ BillingController.webhook line 82: `$request->validate()` inline — melanggar coding standard
+  (by design karena CSRF excluded + signature verify, tapi tetap melanggar)
+
+Services (6):
+- BillingService (static), PlanService (mixed: static factory + instance methods),
+  UserService (instance), LicenseService (static), AuditQueryService (instance),
+  BulkDeleteService (instance)
+
+Service issues:
+- ❌ Static methods di BillingService, LicenseService, PlanService.syncPermissionsForPlan — sulit mock/test
+- ❌ PlanService::for() static factory tapi juga punya instance methods (can, membersLeft, etc)
+- ✅ LicenseService snapshot untuk katalog versioning
+- ✅ BulkDeleteService extract common pattern (good DRY)
+
+Models (6):
+- User, Role, Permission, Plan, License, Payment, Setting
+
+Model issues:
+- ❌ User mempunyai `phone_verified_at` di casts (line 45) tapi tidak ada use case
+  verifikasi telepon — harus didokumentasikan
+- ⚠️ Payment tidak punya `canceled_at` di $fillable (line 10) tapi model pakai
+  direct update(['canceled_at' => now()]) di BillingService.cancelUser
+  (ini WORK via Eloquent update(), tapi tidak konsisten dengan mass assignment protection)
+- ✅ Semua pakai SoftDeletes (kecuali Plan, License, Payment, Setting yang relasional)
+
+Validation:
+- ✅ Hampai semua pakai Form Request (app/Http/Requests/<Domain>/)
+- ❌ BillingController.webhook: inline validate (P1 — sudah diketahui)
+- ❌ SettingsController.update: inline validate (SUDAH DIPERBAIKI → SystemSettingsRequest)
+- ✅ Form Request authorize() non-trivial untuk protected resource
+
+Authorization:
+- ✅ route-level (can: + feature: middleware)
+- ❌ Tidak ada Policy class — semua di FormRequest authorize() atau controller body
+  Ini bisa scalability issue, tapi untuk skala saat ini cukup
+
+Error handling:
+- ✅ abort_if/abort_unless/abort konsisten
+- ✅ hash_equals untuk webhook signature verify
+- ✅ Fail-closed pattern (registration disabled → 404, feature off → 404)
+
+Database queries:
+- ✅ Eager loading di banyak tempat (with('roles', 'permissions'))
+- ❌ N+1 potential: PlanService::syncPermissionsForPlan() loop over Permission::all()
+  di dalam foreach $features (Permission::featureOf($perm->name) dipanggil per perm per feature)
+- ❌ UserController.index line 26-35: query kompleks tapi OK
+- ❌ BillingAdminController.index: multiple paginate queries (payments + licenses)
+  — ini design choice untuk dashboard, tapi 2 query pagination sekaligus
+
+API consistency:
+- ❌ Response format berbeda:
+  UserApiController line 35: UserResource::collection($users)->response()->getData(true)
+  (workaround untuk pagination meta — format berbeda dari controller lain)
+- ❌ ApiTokenApiController & ApiTokenController keduanya ada — duplikat web vs API
+  (bukan bug, design pattern, tapi potensi sync issue)
+
+---
+FRONTEND
+---
+
+- AdminLTE 4.9.1 + Bootstrap 5.3, dark theme default via CSS custom properties
+- Tidak ada npm/Vite — semua CSS/JS di public/vendor/* (committed)
+- Views: layouts/, partials/{layout,modals}, views/{auth,access,settings,monitoring}
+- 19 view files terorganisir rapi
+
+Frontend issues:
+- ✅ Component structure konsisten (action-buttons, sortable-th, flash-message)
+- ✅ i18n via ui() helper + @__('messages.*')
+- ⚠️ Tidak ada E2E test untuk view rendering
+- ⚠️ Blade error display: @error + $message di sebagian views, @if($errors) di lainnya
+  (perlu konsistensi — lihat di bawah)
+
+---
+DATABASE
+---
+
+Migrasi (19 file + 4 framework dasar):
+- users, cache, jobs, password_reset_tokens, sessions (framework)
+- permission_tables, activity_log (spatie)
+- users: +username, +phone, +phone_verified_at, +soft_deletes
+- settings, plans, licenses, payments, notifications (custom)
+- telescope, language_lines (packages)
+
+Schema issues:
+- ✅ Index ada di tempat yang tepat (payments.status+created_at, licenses.status+issued_to)
+- ❌ settings table: primary key = string `key` — unusual, bisa scalability issue
+- ❌ plans table tidak punya FK ke payments/license (by design — slug-based)
+- ❌ licenses: user_id FK nullable, tapi tidak semua license punya user
+  (global license mode — ini by design)
+- ❌ Tidak ada FK constraints antar tabel custom (plans→payments gunakan slug string)
+  — ini design choice untuk licensing flexibility
+
+Migration quality:
+- ✅ Timestamp prefix konsisten
+- ✅ Up/Down method lengkap
+- ❌ tidak ada foreign key drop di beberapa migrasi down()
+
+---
+TESTING
+---
+
+Pest 4.x — 140 tests (140 passed):
+- Feature: AuthLoginTest, ApiAuthTest, ApiEndpointsTest, ApiTokenTest,
+  AuditExportTest, AuditPurgeTest, AuditTest, BillingTest, ExampleTest,
+  FeatureFlagTest, ForceDeleteAuditTest, FormRequestTest, HttpErrorLogTest,
+  I18nTest, LicensingTest, LocaleTest, LogViewerTest, NotificationPageTest,
+  ObservabilityTest, ProfileTest, QaSmokeTest, RbacTest, RestorePermissionGateTest,
+  ServicesTest, SoftDeleteActionsTest, TranslationTest, UserLastLoginTest,
+  UserManagementLockResetTest, UserManagementTest, UserMenuDetailsTest
+- Unit: ExampleTest (hanya contoh)
+
+Testing issues:
+- ❌ SQLite in-memory (test) vs MySQL 8 (production) — environment mismatch
+  Bisa menyebabkan query MySQL-specific lolos test
+- ❌ Unit test minimal (hanya ExampleTest) — semua di Feature
+- ❌ Tidak ada integration test untuk MySQL
+- ❌ Tidak ada E2E test untuk view rendering
+- ❌ Tidak ada API contract test (response schema validation)
+- ⚠️ Test env: CACHE_STORE=array, but production = database (bisa melewatkan
+  cache-related bug)
+- ⚠️ BCRYPT_ROUNDS=4 di test (production = 12) — bcrypt test saja
+
+---
+SECURITY
+---
+
+Authentication:
+- ✅ Laravel built-in + Sanctum
+- ✅ Rate limiting (throttle:10,15) di auth routes
+- ✅ Login lockout (5 fails → 15min)
+- ✅ Email verification sebelum login selesai
+- ✅ Password: min 12, regex A-Z/a-z/0-9/symbol
+
+Authorization:
+- ✅ Route-level gates (can: + feature:)
+- ✅ Super-admin bypass documented
+- ❌ Tidak ada Policy class
+- ⚠️ BulkDeleteService: auth()->user()->can() di dalam service — coupling
+
+Input validation:
+- ✅ Form Requests untuk semua mutation
+- ❌ Webhook: inline validate (by design, needs refactor)
+- ❌ SettingsController: inline validate (SUDAH DIPERBAIKI)
+
+SQL injection:
+- ✅ Eloquent ORM — tidak ada raw SQL dengan user input
+- ⚠️ AuditController.export: fputcsv — raw export tapi safe (no injection)
+
+XSS:
+- ⚠️ SecurityHeaders middleware: CSP `script-src 'self' 'unsafe-inline'`
+  — inline JS diperlukan untuk AdminLTE. Trade-off yang perlu dokumentasi
+- ✅ Blade {{ }} auto-escaped
+
+CSRF:
+- ✅ Web routes — Laravel CSRF token
+- ⚠️ Webhook route (billing.webhook) CSRF excluded — tapi signature verified
+- ✅ Form POST — CSRF token
+
+Mass assignment:
+- ✅ Semua model punya $fillable yang eksplisit
+
+Secrets:
+- ✅ APP_LICENSE_SECRET via env, fail closed di LicenseService
+- ✅ BILLING_WEBHOOK_SECRET via env, no fallback di config/billing.php
+- ❌ .env.example tidak punya BILLING_FAKE, BILLING_GATEWAY env vars
+- ✅ LicenseService: throw RuntimeException jika secret unset di prod/staging
+
+Rate limiting:
+- ✅ Auth login: throttle:10,15
+- ✅ Webhook: tidak rate limited (by design — signature verified)
+- ❌ SettingsController.update: TIDAK ada rate limiting!
+- ❌ FeatureController.toggle: tidak ada rate limiting
+
+---
+DEVOPS
+---
+
+NOT INSPECTED — tidak ada Dockerfile, docker-compose, atau CI/CD workflow
+di dalam repository ini.
+
+Environment:
+- ✅ .env.example komprehensif (tapi missing billing env vars)
+- ✅ phpunit.xml environment overrides
+- ⚠️ DB_CONNECTION=sqlite di test, production = MySQL
+- ⚠️ Tidak ada docker setup
+
+Build process:
+- ✅ Tidak ada npm/Vite build step (all CSS/JS committed di public/vendor/)
+- ❌ Tidak ada linting stage di CI (harus manual jalanin pint)
+
+Deployment:
+- NOT INSPECTED — tidak ada deployment script
+
+Logging:
+- ✅ Laravel Log (daily channel), Sentry (optional, DSN-gated)
+- ✅ LogHttpErrors middleware untuk 4xx (except 404)
+- ✅ Audit trail via spatie/activitylog (observer + listener)
+
+================================================================================
+PART 5 — CONSISTENCY AUDIT
+================================================================================
+
+---
+5.1 NAMING CONVENTIONS
+---
+
+Laravel convention: snake_case DB, camelCase JS, PascalCase class,
+kebab-case route/permission slugs, resource.action permission slugs.
+
+✅ Konsisten di seluruh codebase.
+
+❌ Inconsistency: Service method pattern
+- Location: app/Services/BillingService.php, LicenseService.php
+- Current: static methods (self::checkout(), self::complete(), etc)
+- Expected: konsisten dengan UserService (instance methods)
+- Severity: Medium — sulit testing, tapi bukan bug
+- Cause: utility pattern untuk kemudahan akses
+- Solution: refactor ke instance methods + DI
+
+---
+5.2 API RESPONSE FORMAT
+---
+
+✅ API controllers konsisten pakai response()->json()
+❌ Inconsistency: pagination response format
+
+- Location: app/Http/Controllers/Api/UserApiController.php:35,
+  RoleApiController.php:26, PermissionApiController.php:26,
+  AuditApiController.php:23, NotificationApiController.php:24
+- Current: UserResource::collection($users)->response()->getData(true)
+  (unwrap pagination meta ke array mentah)
+- Expected: standardized pagination response (data + meta + links)
+- Severity: Medium — API consumers harus handle format berbeda
+- Cause: JsonResource tidak otomatis include pagination meta di API mode
+- Solution: buat ApiPaginator helper atau gunakan Laravel API Resources properly
+
+---
+5.3 ERROR FORMATS
+---
+
+Web controllers:
+- Flash messages: `with('success', ...)`, `with('error', ...)`, `with('status', ...)`
+- ❌ 3 key berbeda: 'success', 'error', 'status' — seharusnya konsisten
+
+API controllers:
+- ✅ Konsisten: {"message": "...", "errors": {...}}}
+
+---
+5.4 HTTP STATUS CODES
+---
+
+✅ Konsisten: 200, 201, 403, 404, 422, 429, 500
+✅ abort_if/abort_unless konsisten
+
+---
+5.5 DATABASE NAMING
+---
+
+✅ snake_case konsisten
+✅ timestamps, soft delete convention
+❌ settings.key sebagai primary key string — unusual pattern (bukan convention)
+
+---
+5.6 DOCUMENTATION VS CODE
+---
+
+❌ Gap ditemukan:
+
+1. docs/api.md tidak menyebutkan:
+   - /admin/billing endpoint (BillingAdminController)
+   - /billing/webhook endpoint (BillingController.webhook — CSRF excluded)
+   - /billing/invoice/{payment} endpoint
+   - /billing/cancel endpoint
+
+2. docs/api.md tidak menyebutkan plan management endpoints
+   - docs says "plans CRUD" tapi API docs tidak cover
+
+3. CONTRIBUTING.md "Open items" section:
+   - "subscriber RBAC enforcement: ... Currently open"
+   - TAPI PlanService::filterPermissions() ADA di RoleController — IMPLEMENTED
+   - Ini keputusan ke depan dokumentasi
+
+4. .env.example tidak punya:
+   - BILLING_FAKE=true
+   - BILLING_GATEWAY=dummy
+   - BILLING_GATEWAY_URL=
+
+---
+5.7 TESTING PATTERNS
+---
+
+✅ Pest, RefreshDatabase, Feature category konsisten
+❌ Unit test minimal (hanya ExampleTest)
+⚠️ SQLite in-memory vs MySQL production — environment mismatch
+
+---
+5.8 FRONTEND ERROR DISPLAY
+---
+
+❌ Inconsistency:
+
+- LoginController (auth/login): error key = 'identifier'
+- RegisterController (auth/register): error key = 'name/email' etc
+- PlanRequest: error key = 'features', 'allowed_permissions'
+- TranslationController: error display di edit view?
+- SettingsController: error di form?
+
+Beberapa views pakai @error($message), beberapa pakai @if($errors->any())
+perlu konsistensi di semua blade.
+
+================================================================================
+PART 6 — AGENT QUALITY AUDIT
+================================================================================
+
+---
+HERMES (MAIN AGENT)
+---
+
+Role clarity:           9/10 — jelas AI assistant, bisa bantu coding + analisis
+Scope clarity:          8/10 — system prompt jelas, constraint ada
+Context quality:        9/10 — semua dokumen project + memory tersedia
+Instruction quality:    9/10 — AGENTS.md + coding standard + ADR + PRD komprehensif
+Tool access:           10/10 — lengkap (file, terminal, git, browser, test, memory)
+Safety/restrictions:    8/10 — ponytail plugin, git safety rules, tapi bisa ekses ~/.env
+Output consistency:     7/10 — style bervariasi antar sesi, dependency pada mood
+Self-verification:      8/10 — konsisten jalankan tes sebelum selesai
+Dependency awareness:   6/10 — kadang lupa load skill relevan
+Contract awareness:     5/10 — tidak ada kontrak formal antar fase
+Testing discipline:     8/10 — konsisten jalankan pest sebelum commit
+Error handling:         8/10 — guardrail ada (tool retry, hard stop)
+Recovery ability:       8/10 — biasanya recover dari error dengan cepat
+OVERALL: 8.1/10
+
+---
+SUBAGENTS (delegate_task)
+---
+
+Role clarity:           7/10 — tergantung goal yang diberikan
+Scope clarity:          6/10 — buta pada konteks lain
+Context quality:        6/10 — hanya dapat apa yang diberikan di `context` param
+Instruction quality:    7/10 — tergantung user prompt
+Tool access:            8/10 — sama seperti main agent
+Safety/restrictions:    8/10 — isolated context
+Output consistency:     5/10 — sangat bergantung pada goal yang diberikan
+Self-verification:      6/10 — tergantung goal
+Dependency awareness:   3/10 — tidak bisa lihat konteks agen lain
+Contract awareness:     2/10 — tidak ada kontrak formal
+Testing discipline:     5/10 — tergantung goal
+Error handling:         7/10 — isolated, tidak crash sistem utama
+Recovery ability:       6/10 — hanya bisa lapor, tidak bisa interaksi
+OVERALL: 6.1/10
+
+================================================================================
+PART 7 — FAILURE ANALYSIS
+================================================================================
+
+---
+7.1 Runtime error (SessionController Auth facade)
+---
+
+Root cause: Missing `use Illuminate\Support\Facades\Auth;` import
+Impact: Auth::logoutOtherDevices() throws undefined class error
+Frequency: Every call to /sessions/logout-others
+Current mitigation: Belum ada — ini BUG aktif
+Risk: High — endpoint yang rusak
+Recommendation: Tambahkan import
+
+---
+7.2 Environment mismatch (SQLite vs MySQL)
+---
+
+Root cause: Test pakai SQLite in-memory, prod pakai MySQL 8
+Impact: Query MySQL-specific lolos test, error di production
+Frequency: Anytime there's MySQL-specific SQL
+Current mitigation: Tidak ada
+Risk: High
+Recommendation: Tambah MySQL integration test di CI
+
+---
+7.3 No static analysis
+---
+
+Root cause: Hanya pakai php -l + pint, tidak ada PHPStan/Psalm
+Impact: Typo (seperti missing import) lolos ke runtime
+Frequency: Every typo
+Current mitigation: Manual review via PR
+Risk: Medium-High
+Recommendation: Tambah PHPStan level 6+ di CI
+
+---
+7.4 API response format inconsistency
+---
+
+Root cause: UserApiController pakai ->response()->getData(true) workaround
+Impact: Response pagination format berbeda dari controller lain
+Frequency: Setiap paginate di API
+Current mitigation: Tidak ada
+Risk: Medium
+Recommendation: Standardize dengan ApiResource helper
+
+---
+7.5 Docs vs code gap (subscriber RBAC)
+---
+
+Root cause: PlanService::filterPermissions() ada di kode tapi di dokumen "not yet built"
+Impact: Developer bingung — dokumen atau kode yang benar?
+Frequency: Saat baca dokumen sebelum kodifikasi
+Current mitigation: Tidak ada
+Risk: Medium
+Recommendation: Update dokumen untuk match implementasi
+
+---
+7.6 .env.example missing billing vars
+---
+
+Root cause: .env.example tidak update ketika config/billing.php dibuat
+Impact: Developer tidak tahu env vars yang perlu di-set
+Frequency: Setup baru
+Current mitigation: Tidak ada
+Risk: Low-Medium
+Recommendation: Tambah BILLING_FAKE, BILLING_GATEWAY, BILLING_GATEWAY_URL ke .env.example
+
+---
+7.7 Static service methods
+---
+
+Root cause: BillingService, LicenseService pakai static methods
+Impact: Sulit mock di test, tight coupling
+Frequency: Test & refactoring
+Current mitigation: Tidak ada (tapi test tetap jalan karena service sederhana)
+Risk: Medium
+Recommendation: Refactor ke instance methods + DI container
+
+================================================================================
+PART 8 — PROJECT HEALTH SCORE
+================================================================================
+
+Architecture:         8/10 — Clean layered, good separation
+Requirements:         7/10 — Docs komprehensif, tapi gap docs-vs-code
+Agent orchestration:  5/10 — Single agent, no workflow automation
+Agent consistency:    6/10 — Ponytail membantu, tapi style bervariasi
+Backend quality:      8/10 — PSR-12, thin controllers, Form Request, service layer
+Frontend quality:     7/10 — AdminLTE konsisten, i18n, accessibility
+Database quality:     8/10 — Migrasi terorganisir, indexing baik
+Testing:              6/10 — 140 tests tapi SQLite/MySQL mismatch, unit test kosong
+Integration:          5/10 — Web+API duplication, tidak ada API schema validation
+Security:             8/10 — Route-gated authz, rate limit, webhook signature, CSP
+Documentation:        8/10 — Sangat komprehensif (18 docs), tapi gap sync
+DevOps:               5/10 — NOT INSPECTED (tidak ada CI/CD, Docker di repo)
+
+Overall: 6.8/10
+
+================================================================================
+PART 9 — PRIORITY IMPROVEMENTS
+================================================================================
+
+P0 — CRITICAL
+---
+
+1. Fix SessionController missing Auth facade import
+   Problem: Runtime error di /sessions/logout-others
+   Root cause: Missing use statement
+   What: Add `use Illuminate\Support\Facades\Auth;`
+   Owner: Backend agent
+   Files: app/Http/Controllers/SessionController.php
+   Improvement: Endpoint berfungsi
+   Verify: php artisan test (SessionController tests)
+
+2. Add PHPStan static analysis
+   Problem: Typo lolos ke runtime
+   Root cause: Tidak ada static analysis
+   What: Tambah PHPStan level 6+ via composer + CI gate
+   Owner: DevOps agent
+   Files: composer.json, .github/workflows/ci.yml
+   Improvement: Tangkap typo sebelum runtime
+   Verify: CI gate, `vendor/bin/phpstan analyse`
+
+3. Add MySQL integration test
+   Problem: SQLite-vs-MySQL query mismatch
+   Root cause: Test env pake SQLite
+   What: Tambah MySQL test env matrix di CI
+   Owner: DevOps agent
+   Files: phpunit.xml, .github/workflows/ci.yml
+   Improvement: MySQL-specific bugs tertangkap
+   Verify: CI matrix green
+
+4. Standardize API response format
+   Problem: UserApiController pakai getData(true) workaround
+   Root cause: Tidak ada standard API resource formatter
+   What: Buat ApiResource trait + standardize pagination
+   Owner: Backend agent
+   Files: app/Http/Resources/, Api controllers
+   Improvement: API consumers handle response konsisten
+   Verify: ApiEndpointsTest
+
+P1 — HIGH
+---
+
+5. Extract webhook validation to Form Request
+   Problem: BillingController.webhook inline $request->validate()
+   Root cause: CSRF excluded + signature verify manual
+   What: Buat BillingWebhookRequest dengan authorize()=signature, rules()=payload
+   Owner: Backend agent
+   Files: app/Http/Requests/Billing/BillingWebhookRequest.php
+   Improvement: Konsisten dengan convention, testability
+   Verify: BillingTest
+
+6. Sync docs vs code (subscriber RBAC)
+   Problem: docs katakan "not yet built" tapi filterPermissions ada di kode
+   Root cause: Dokumen tidak update
+   What: Update licensing-and-billing.md §11.4 + CONTRIBUTING.md open items
+   Owner: Documentation agent
+   Files: docs/licensing-and-billing.md, docs/CONTRIBUTING.md
+   Improvement: Dev tahu implementasi status
+   Verify: grep "not yet built" vs kode
+
+7. Add .env.example billing vars
+   Problem: .env.example missing BILLING_FAKE/GATEWAY/GATEWAY_URL
+   Root cause: Dokumentasi tidak sync
+   What: Tambahkan ke .env.example
+   Owner: DevOps agent
+   Files: .env.example
+   Improvement: Setup developer lebih gampang
+   Verify: grep config('billing.') keys vs .env.example
+
+8. Fix Payment.canceled_at mass assignment
+   Problem: canceled_at tidak di fillable tapi dipakai
+   Root cause: fillable tidak lengkap
+   What: Tambahkan 'canceled_at' ke $fillable
+   Owner: Backend agent
+   Files: app/Models/Payment.php
+   Improvement: Konsiden mass assignment protection
+   Verify: Mass assignment test
+
+P2 — MEDIUM
+---
+
+9. Refactor static service methods to instance methods
+   Problem: Sulit mock di test
+   Root cause: static utility pattern
+   What: Ganti ke instance methods + DI
+   Owner: Backend agent
+   Files: app/Services/*, Controllers
+   Improvement: Testable, injectable
+   Verify: Test coverage, mock availability
+
+10. Create Policy classes
+    Problem: Semua authorization di FormRequest authorize()
+    Root cause: Policy class tidak dibuat
+    What: Register Policy untuk User, Role, Permission
+    Owner: Backend agent
+    Files: app/Policies/*
+    Improvement: Better separation, reusable
+    Verify: Gate check still works
+
+11. Standardize flash message keys
+    Problem: 3 key ('success', 'error', 'status')
+    Root cause: Tidak ada convention yang dipaksakan
+    What: Pilih satu ('success' + 'error') + update semua controller
+    Owner: Backend agent
+    Files: All controllers
+    Improvement: View flash-message component konsisten
+    Verify: grep "with('success'", "with('error'", "with('status'"
+
+P3 — NICE TO HAVE
+---
+
+12. Add rate limiting to SettingsController + FeatureController.toggle
+    Problem: Admin endpoints tidak rate limited
+    Root cause: Tidak ada throttle di route
+    What: Tambahkan throttle:10,1 di routes/web.php
+    Owner: Backend agent
+    Files: routes/web.php
+    Improvement: Abuse protection
+    Verify: ThrottleTest
+
+13. Unit tests untuk Services
+    Problem: Hanya Feature test, unit test kosong
+    Root cause: Tidak ada unit test
+    What: Tambah unit test untuk PlanService, LicenseService, UserService
+    Owner: Backend agent
+    Files: tests/Unit/
+    Improvement: Faster feedback, isolation
+    Verify: php artisan test --testsuite=Unit
+
+14. Document policy: settings.key sebagai primary key
+    Problem: unusual pattern tidak didokumentasikan
+    Root cause: Design decision tidak dicatat
+    What: Dokumentasikan di architecture.md + migration comment
+    Owner: Documentation agent
+    Files: docs/architecture.md, database/migrations/...settings...
+    Improvement: Developer paham design choice
+    Verify: Doks rasional ada
+
+================================================================================
+PART 10 — FINAL REPORT
+================================================================================
+
+1. CURRENT AGENT ARCHITECTURE
+   - SATU CLI agent (Hermes) dengan 77 skills (manual load)
+   - Model: poolside/laguna-s-2.1:free (primary) + local 9router fallback
+   - Plugin: Ponytail (lazy mode), Agency-agents-router (subagent spawn)
+   - State: memory (user notes), skills, kanban.db, state.db
+   - TIDAK ADA orchestrated multi-agent workflow
+   - Komunikasi: satu agent = satu sesi, memory adalah satu-satunya state share
+   - Verification gate: manual (php artisan test, pint, php -l)
+
+2. CURRENT PROJECT ARCHITECTURE
+   - Laravel 13 monolitik, layered (HTTP → Controller → Service → Model → MySQL)
+   - AdminLTE 4.9.1 + Bootstrap 5.3 dark theme
+   - Spatie: permission, activitylog, translation-loader
+   - Laravel: Pennant, Sanctum, Pail/Telescope
+   - Pest testing, SQLite in-memory
+   - Dokumentasi sangat komprehensif (18 docs + ADR)
+
+3. CURRENT WORKFLOW
+   User request → context scan (AGENTS.md + docs) → skill view → code scan
+   → analyze → implement → verify (test/pint) → commit → push → PR
+   → user review → [bug? back to scan]
+   - Single-session, no handoff protocols, no formal phase gates
+   - Ponytail plugin enforces: YAGNI, root-cause fix, minimal diffs
+
+4. BIGGEST WEAKNESSES
+   a. Environment mismatch: SQLite test vs MySQL production
+   b. No static analysis (typos lolas ke runtime)
+   c. Static service methods (sulit testing/mock)
+   d. API response format inconsistency (pagination workaround)
+   d. No CI/CD otomatis (NOT INSPECTED — mungkin ada di tempat lain)
+   e. Docs vs code drift (subscriber RBAC, API coverage)
+
+5. BIGGEST SOURCES OF BUGS
+   a. Missing imports (SessionController Auth facade)
+   b. SQLite-vs-MySQL query incompatibility
+   c. Mass assignment gaps (Payment.canceled_at)
+   d. API format drift (web vs API duplication)
+
+6. BIGGEST SOURCES OF INCONSISTENCY
+   a. Flash message keys: 'success'/'error'/'status'
+   b. Service method pattern: static vs instance
+   c. API response format: getData(true) workaround
+   d. Error display di Blade: @error vs @if($errors->any())
+
+7. PROJECT HEALTH SCORE: 6.8/10
+   Architecture:      8/10
+   Requirements:      7/10
+   Agent orchestration: 5/10
+   Agent consistency:  6/10
+   Backend quality:    8/10
+   Frontend quality:   7/10
+   Database quality:   8/10
+   Testing:            6/10
+   Integration:        5/10
+   Security:           8/10
+   Documentation:      8/10
+   DevOps:             5/10 (NOT INSPECTED)
+
+8. AGENT HEALTH SCORES
+   - Hermes (main):  8.1/10
+   - Subagents:      6.1/10 (no contract, blind context)
+
+9. TOP 10 IMPROVEMENTS (lihat PART 9)
+   P0: SessionController import, PHPStan, MySQL test, API format
+   P1: Webhook Form Request, docs sync, .env.example, Payment.fillable
+   P2: Static service refactor, Policy classes, flash message keys
+   P3: Rate limiting, Unit tests, Document settings.key pattern
+
+10. RECOMMENDED TARGET ARCHITECTURE
+    - Tambahkan PHPStan level 6+ sebagai CI gate (sebelum test)
+    - Tambahkan MySQL integration test di CI matrix
+    - Standardize API resources (paginate + data wrapper)
+    - Refactor static services ke instance methods + DI
+    - Buat formal phase gate: scan → plan → code → lint → test → PR → review
+    - Dokumentasikan semua keputusan design di ADR (termasuk settings.key pattern, static service, webhook inline validate)

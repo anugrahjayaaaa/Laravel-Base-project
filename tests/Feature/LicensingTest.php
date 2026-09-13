@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\License;
 use App\Models\Plan;
+use App\Models\Setting;
+use App\Models\User;
 use App\Services\LicenseService;
 use App\Services\PlanService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -9,11 +12,14 @@ uses(RefreshDatabase::class);
 beforeEach(fn () => $this->seed());
 
 it('issues and activates a signed license, then gates features', function () {
-    Plan::create([
-        'slug' => 'pro', 'name' => 'Pro', 'price_monthly' => 99000,
+    // Reset from global enterprise default to test pro license flow
+    Setting::set('active_plan', 'free');
+    Setting::set('license_key', null);
+
+    Plan::firstOrCreate(['slug' => 'pro'], ['name' => 'Pro', 'price_monthly' => 99000,
         'is_active' => true,
-        'limits' => ['max_members' => 5, 'max_projects' => 3],
-        'features' => ['kanban', 'audit', 'telescope'],
+        'limits' => ['max_members' => 5, 'max_roles' => 3],
+        'features' => ['api-tokens', 'audit', 'telescope'],
     ]);
 
     $key = LicenseService::issue('pro', ['type' => 'manual', 'expires_at' => null]);
@@ -24,14 +30,17 @@ it('issues and activates a signed license, then gates features', function () {
         ->and(LicenseService::daysLeft())->toBeNull(); // lifetime
 
     $plan = PlanService::for();
-    expect($plan->can('kanban'))->toBeTrue()
+    expect($plan->can('api-tokens'))->toBeTrue()
         ->and($plan->can('audit'))->toBeTrue()
-        ->and($plan->membersLeft())->toBe(5 - \App\Models\User::count());
+        ->and($plan->membersLeft())->toBe(5 - User::count());
 });
 
 it('rejects a forged license key', function () {
-    Plan::create(['slug' => 'pro', 'name' => 'Pro', 'price_monthly' => 99000,
-        'is_active' => true, 'limits' => ['max_members' => 5], 'features' => ['kanban']]);
+    // Reset from global enterprise default
+    Setting::set('active_plan', 'free');
+    Setting::set('license_key', null);
+
+    Plan::firstOrCreate(['slug' => 'pro'], ['name' => 'Pro', 'price_monthly' => 99000, 'is_active' => true, 'limits' => [], 'features' => []]);
 
     $key = LicenseService::issue('pro', ['type' => 'manual', 'expires_at' => null]);
     $forged = 'LIC-PRO-DEADBEEF1234';
@@ -42,46 +51,73 @@ it('rejects a forged license key', function () {
 });
 
 it('expired license downgrades to free', function () {
-    Plan::create(['slug' => 'pro', 'name' => 'Pro', 'price_monthly' => 99000,
-        'is_active' => true, 'limits' => ['max_members' => 5], 'features' => ['kanban']]);
+    // Reset from global enterprise default
+    Setting::set('active_plan', 'free');
+    Setting::set('license_key', null);
+
+    Plan::firstOrCreate(['slug' => 'pro'], ['name' => 'Pro', 'price_monthly' => 99000, 'is_active' => true, 'limits' => [], 'features' => []]);
 
     $key = LicenseService::issue('pro', ['type' => 'recurring', 'expires_at' => now()->subDay()]);
     expect(LicenseService::activate($key))->toBeFalse() // already expired
         ->and(LicenseService::status())->toBe('none');
 
     // active plan stays free (default seeded)
-    expect(\App\Models\Setting::get('active_plan'))->toBe('free');
+    expect(Setting::get('active_plan'))->toBe('free');
 });
 
 it('revoke instantly locks features', function () {
-    Plan::create(['slug' => 'pro', 'name' => 'Pro', 'price_monthly' => 99000,
-        'is_active' => true, 'limits' => ['max_members' => 5], 'features' => ['kanban']]);
+    // Reset from global enterprise default
+    Setting::set('active_plan', 'free');
+    Setting::set('license_key', null);
+
+    Plan::firstOrCreate(['slug' => 'pro'], ['name' => 'Pro', 'price_monthly' => 99000, 'is_active' => true, 'limits' => [], 'features' => []]);
     $key = LicenseService::issue('pro', ['type' => 'manual', 'expires_at' => null]);
     LicenseService::activate($key);
 
     LicenseService::revoke($key, 'abuse');
     // instance deactivated: no active license, plan falls back to free
     expect(LicenseService::status())->toBe('none')
-        ->and(\App\Models\Setting::get('active_plan'))->toBe('free')
-        ->and(\App\Models\License::where('license_key', $key)->first()->status)->toBe('revoked');
+        ->and(Setting::get('active_plan'))->toBe('free')
+        ->and(License::where('license_key', $key)->first()->status)->toBe('revoked');
 });
 
 it('default free plan is active after seed', function () {
-    expect(PlanService::for()->can('audit'))->toBeTrue()
-        ->and(PlanService::for()->membersLeft())->toBe(2 - \App\Models\User::count());
+    // Reset from global enterprise default
+    Setting::set('active_plan', 'free');
+    Setting::set('license_key', null);
+    cache()->flush();
+
+    // Free plan: user-set minimal (limits all zero, features [])
+    expect(PlanService::for()->can('audit'))->toBeFalse()
+        ->and(PlanService::for()->can('kanban'))->toBeFalse()
+        ->and(PlanService::for()->membersLeft())->toBe(max(0, 0 - User::count()));
+});
+
+it('uses default_plan when no license is active', function () {
+    // Reset from global enterprise default
+    Setting::set('active_plan', 'free');
+    Setting::set('license_key', null);
+    cache()->flush();
+
+    Setting::set('default_plan', 'free');
+
+    $plan = PlanService::for();
+    expect($plan->can('audit'))->toBeFalse()
+        ->and($plan->can('kanban'))->toBeFalse();
 });
 
 it('tamper: flipping settings.active_plan without a valid license yields no paid features', function () {
-    // client owns the DB and edits the setting directly (Model 1, §10.1)
-    \App\Models\Setting::set('active_plan', 'pro');
-    \App\Models\Setting::set('license_key', null);
+    // Reset from global enterprise default
+    Setting::set('active_plan', 'free');
+    Setting::set('license_key', null);
 
-    // no matching signed license row -> entitlement uses the 'pro' plan row but
-    // with NO snapshot, and there is no pro plan seeded -> falls back to free.
-    // Simplest correct assertion: without an issued+activated license, paid
-    // features are NOT granted.
-    Plan::create(['slug' => 'pro', 'name' => 'Pro', 'price_monthly' => 99000,
-        'is_active' => true, 'limits' => ['max_members' => 5], 'features' => ['kanban']]);
+    // client owns the DB and edits the setting directly (Model 1, §10.1)
+    Setting::set('active_plan', 'pro');
+    Setting::set('license_key', null);
+
+    // no matching signed license row -> PlanService returns no features for a
+    // paid plan without a valid license (§10.1 tamper resistance).
+    Plan::firstOrCreate(['slug' => 'pro'], ['name' => 'Pro', 'price_monthly' => 99000, 'is_active' => true, 'limits' => [], 'features' => []]);
 
     // even with pro plan row present, no activated license => snapshot empty => no kanban
     expect(PlanService::for()->can('kanban'))->toBeFalse();

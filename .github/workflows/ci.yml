@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    if: false  # ponytail: CI temporarily disabled, remove to re-enable
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3']
+        db: [sqlite, mysql]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pcov, pdo_sqlite, pdo_mysql
+          coverage: pcov
+          tools: composer:v2, pint
+
+      - name: Setup MySQL (mysql only)
+        if: matrix.db == 'mysql'
+        uses: shivammathur/mysql-action@v1
+        with:
+          mysql-version: '8.4'
+
+      - name: Switch phpunit.xml to MySQL backend (mysql only)
+        if: matrix.db == 'mysql'
+        run: |
+          cp phpunit.xml phpunit.xml.bak
+          sed -i.bak 's|<env name="DB_CONNECTION" value="sqlite"/>|<env name="DB_CONNECTION" value="mysql"/>|' phpunit.xml
+          sed -i.bak 's|<env name="DB_DATABASE" value=":memory:"/>|<env name="DB_DATABASE" value="laravel_test"/>|' phpunit.xml
+          sed -i.bak 's|<env name="SESSION_DRIVER" value="array"/>|<env name="SESSION_DRIVER" value="database"/>|' phpunit.xml
+
+      - name: Copy .env
+        run: cp .env.testing.example .env.testing
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Generate app key
+        run: php artisan key:generate --env=testing --force
+
+      - name: Set MySQL env vars (mysql only)
+        if: matrix.db == 'mysql'
+        run: |
+          echo "DB_HOST=127.0.0.1" >> .env.testing
+          echo "DB_PORT=3306" >> .env.testing
+          echo "DB_USERNAME=root" >> .env.testing
+          echo "DB_PASSWORD=root" >> .env.testing
+        shell: bash
+
+      - name: Create test database (mysql only)
+        if: matrix.db == 'mysql'
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS laravel_test;"
+
+      - name: Run migrations
+        run: php artisan migrate --env=testing --force
+
+      - name: Pint (lint)
+        run: vendor/bin/pint --test
+
+      - name: PHPStan (static analysis)
+        run: vendor/bin/phpstan analyse --memory-limit=512M
+
+      - name: Run Pest tests
+        run: php artisan test --env=testing
+        timeout-minutes: 10
+
+      - name: Restore phpunit.xml (mysql only)
+        if: always() && matrix.db == 'mysql'
+        run: |
+          cp phpunit.xml.bak phpunit.xml

@@ -1,3 +1,7 @@
+@php
+use App\Models\User;
+use App\Services\LicenseService;
+@endphp
 @extends('layouts.app')
 @section('content')
 <div class="row g-3 mb-3">
@@ -37,19 +41,38 @@
         default => 'text-bg-warning',
     };
     $licText = match ($licStatus) {
-        'active' => 'License: '.($licenseDaysLeft === null ? 'Lifetime' : $licenseDaysLeft.' days left'),
-        'expired' => 'Expired — downgraded to Free',
-        'revoked' => 'Revoked — downgraded to Free',
-        'none' => 'No license — Free plan',
-        default => 'License: '.$licStatus,
+        'active' => $licenseDaysLeft === null
+            ? ui('license_active_lifetime')
+            : ui('license_active_days', ['days' => $licenseDaysLeft]),
+        'expired'    => ui('license_expired'),
+        'revoked'    => ui('license_revoked'),
+        'none'       => ui('license_none'),
+        default      => ui('license_status', ['status' => $licStatus]),
     };
 @endphp
 <div class="mb-3">
     <span class="badge {{ $licBadge }} fs-6">
         <i class="bi bi-patch-check me-1"></i>{{ $licText }}
-        <span class="opacity-75 ms-1">({{ $activePlan ?? 'free' }})</span>
+        <span class="opacity-75 ms-1">({{ $activePlan ?? ui('free_plan') }})</span>
     </span>
 </div>
+
+{{-- 7-day expiration warning (per_user mode) --}}
+@unless($user->isSuperAdmin())
+@php
+    $warningLicense = $license ?? LicenseService::activeLicense();
+@endphp
+@if($warningLicense && $warningLicense->expires_at && $warningLicense->expires_at->isFuture() && $warningLicense->expires_at->lte(now()->addDays(7)))
+<div class="alert alert-warning mb-3" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ ui('license_expiring_warning', [
+        'days' => max(0, (int) now()->diffInDays($warningLicense->expires_at)),
+        'plan' => $warningLicense->plan_slug,
+        'date' => $warningLicense->expires_at->format('M d, Y'),
+    ]) }}
+</div>
+@endif
+@endunless
 
 <div class="card shadow-sm border-0">
     <div class="card-body">
@@ -57,4 +80,26 @@
         <p class="text-muted mb-0">{{ ui('dashboard_subtitle') }}</p>
     </div>
 </div>
+
+{{-- Recent activity feed --}}
+@if($recentActivity->isNotEmpty())
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-header">{{ ui('recent_activity') }}</div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            @foreach($recentActivity as $activity)
+            <div class="list-group-item py-2">
+                <div class="d-flex justify-content-between">
+                    <span class="badge bg-secondary text-bg-secondary">{{ $activity->description }}</span>
+                    <span class="text-muted small">{{ $activity->created_at->format('M d, H:i') }}</span>
+                </div>
+                <div class="text-muted small">
+                    {{ $activity->causer?->username ?? ($activity->properties['identifier'] ?? ui('no_activity')) }}
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
 @endsection

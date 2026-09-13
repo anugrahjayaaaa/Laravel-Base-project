@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SessionApiController extends Controller
 {
+    use Auditable;
+
     /** List active sessions. */
     public function index(Request $request): JsonResponse
     {
@@ -31,12 +33,9 @@ class SessionApiController extends Controller
     {
         DB::table('sessions')
             ->where('user_id', $request->user()->id)
-            ->where('id', '<>', $request->session()->getId())
             ->delete();
 
-        if ($request->filled('password')) {
-            Auth::logoutOtherDevices($request->password);
-        }
+        $this->audit($request->user(), 'session_logout_others', $request->user());
 
         return response()->json(['message' => __('messages.sessions_logged_out')]);
     }

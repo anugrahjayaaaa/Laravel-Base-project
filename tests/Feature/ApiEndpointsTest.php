@@ -2,8 +2,13 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Spatie\Activitylog\Models\Activity;
 
 uses(RefreshDatabase::class);
+
 beforeEach(fn () => $this->seed());
 
 function apiToken(User $u): string
@@ -15,7 +20,7 @@ it('logs in and returns a bearer token', function () {
     $u = User::where('email', 'admin@laravel-base.local')->first();
     $r = $this->postJson('/api/v1/login', [
         'identifier' => $u->email,
-        'password' => 'Admin@base12345',
+        'password' => '#Password123',
         'device_name' => 'test',
     ]);
     $r->assertOk()->assertJsonStructure(['token', 'user']);
@@ -83,4 +88,60 @@ it('lists features', function () {
     $this->withHeader('Authorization', 'Bearer '.apiToken($u))
         ->getJson('/api/v1/features')
         ->assertOk();
+});
+
+it('logs session_invalidated when API lock is called', function () {
+    $admin = User::where('email', 'admin@laravel-base.local')->first();
+    $target = User::factory()->create(['username' => 'apilock'.time()]);
+
+    $this->withHeader('Authorization', 'Bearer '.apiToken($admin))
+        ->postJson('/api/v1/users/'.$target->id.'/lock')
+        ->assertOk();
+
+    expect(Activity::where('subject_id', $target->id)
+        ->where('description', 'session_invalidated')->exists())->toBeTrue();
+});
+
+it('logs session_logout_others from API session logout', function () {
+    $u = User::where('email', 'admin@laravel-base.local')->first();
+    $sid = Str::random(40);
+    DB::table('sessions')->insertOrIgnore([
+        'id' => $sid,
+        'user_id' => $u->id,
+        'ip_address' => '127.0.0.1',
+        'user_agent' => 'testing',
+        'last_activity' => time(),
+    ]);
+
+    $this->withHeader('Authorization', 'Bearer '.apiToken($u))
+        ->postJson('/api/v1/sessions/logout-others')
+        ->assertOk();
+
+    expect(Activity::where('subject_id', $u->id)
+        ->where('description', 'session_logout_others')->exists())->toBeTrue();
+});
+
+it('logs profile_updated via API profile update', function () {
+    $u = User::where('email', 'admin@laravel-base.local')->first();
+    $this->withHeader('Authorization', 'Bearer '.apiToken($u))
+        ->putJson('/api/v1/profile', ['name' => 'API Name', 'phone' => '+6281234567890'])
+        ->assertOk();
+
+    expect($u->fresh()->name)->toBe('API Name');
+    expect(Activity::where('subject_id', $u->id)
+        ->where('description', 'profile_updated')->exists())->toBeTrue();
+});
+
+it('logs password_changed via API password change', function () {
+    $u = User::where('email', 'admin@laravel-base.local')->first();
+    $this->withHeader('Authorization', 'Bearer '.apiToken($u))
+        ->postJson('/api/v1/profile/password', [
+            'current_password' => '#Password123',
+            'password' => 'NewPass@12345',
+            'password_confirmation' => 'NewPass@12345',
+        ])->assertOk();
+
+    expect($u->fresh()->password)->not->toBe(Hash::make('#Password123'));
+    expect(Activity::where('subject_id', $u->id)
+        ->where('description', 'password_changed')->exists())->toBeTrue();
 });

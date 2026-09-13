@@ -8,8 +8,8 @@
         <div class="card-body">
             <div class="mb-3">
                 <label class="form-label">{{ ui('name') }}</label>
-                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $permission->name ?? '') }}" placeholder="e.g. user.edit" required>
-                @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" id="permission-name" placeholder="e.g. user.edit" value="{{ old('name', $permission->name ?? '') }}" required aria-describedby="permission-name-error" @error('name') aria-invalid="true" @enderror>
+                @error('name')<div id="permission-name-error" class="invalid-feedback d-block" role="alert" aria-live="polite">{{ $message }}</div>@enderror
             </div>
         </div>
         <div class="card-footer d-flex justify-content-end gap-2">

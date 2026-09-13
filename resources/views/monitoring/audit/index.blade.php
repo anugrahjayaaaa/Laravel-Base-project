@@ -34,7 +34,7 @@
         <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
-                <tr><th>#</th><th>{{ ui('time') }}</th><th>{{ ui('action') }}</th><th>{{ ui('causer') }}</th><th>{{ ui('subject') }}</th><th>IP</th><th></th></tr>
+                <tr><th>#</th><th>{{ ui('time') }}</th><th>{{ ui('action') }}</th><th>{{ ui('causer') }}</th><th>{{ ui('subject') }}</th><th>{{ ui('ip') }}</th><th></th></tr>
             </thead>
             <tbody>
                 @forelse ($activities as $log)
@@ -102,7 +102,7 @@
                 <dl class="row mb-2">
                     <dt class="col-4 text-muted">{{ ui('time') }}</dt><dd class="col-8" id="auditDetailTime"></dd>
                     <dt class="col-4 text-muted">{{ ui('causer') }}</dt><dd class="col-8" id="auditDetailCauser"></dd>
-                    <dt class="col-4 text-muted">IP</dt><dd class="col-8" id="auditDetailIp"></dd>
+                    <dt class="col-4 text-muted">{{ ui('ip') }}</dt><dd class="col-8" id="auditDetailIp"></dd>
                     <dt class="col-4 text-muted">{{ ui('user_agent') }}</dt><dd class="col-8 text-break" id="auditDetailAgent"></dd>
                 </dl>
                 <div id="auditDetailChanges"></div>

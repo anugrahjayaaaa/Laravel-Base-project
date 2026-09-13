@@ -31,7 +31,7 @@
                         <div class="form-check form-switch d-inline-flex align-items-center justify-content-end mb-0">
                             <input class="form-check-input" type="checkbox" role="switch"
                                    id="feat-{{ $feature['slug'] }}" {{ $feature['enabled'] ? 'checked' : '' }}
-                                   aria-label="Toggle {{ $feature['label'] }}"
+                                   aria-label="{{ ui('change_status_of') . ': ' . $feature['label'] }}"
                                    data-bs-toggle="modal" data-bs-target="#featureToggleModal"
                                    data-action="{{ route('features.toggle', $feature['slug']) }}"
                                    data-enabled="{{ $feature['enabled'] ? '0' : '1' }}">

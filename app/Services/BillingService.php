@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\License;
 use App\Models\Payment;
 use App\Models\Plan;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -35,11 +36,11 @@ final class BillingService
             return $payment;
         }
 
-        return self::complete($payment, 'dummy-'.Str::random(12), $plan);
+        return self::complete($payment, 'dummy-'.Str::random(12), $plan, $userId ? User::find($userId) : null);
     }
 
     /** Mark paid + grant license. Idempotent via status. */
-    public static function complete(Payment $payment, string $gatewayRef, ?Plan $plan = null): Payment
+    public static function complete(Payment $payment, string $gatewayRef, ?Plan $plan = null, ?User $forUser = null): Payment
     {
         if ($payment->status === 'paid') {
             return $payment; // already completed — idempotent
@@ -61,7 +62,12 @@ final class BillingService
             'expires_at' => $expiresAt,
             'user_id' => $payment->user_id,
         ]);
-        LicenseService::activate($key);
+
+        if (Setting::get('license_mode', 'global') === 'per_user' && $forUser) {
+            LicenseService::activate($key, null, $forUser);
+        } else {
+            LicenseService::activate($key);
+        }
 
         return $payment->fresh();
     }
@@ -108,6 +114,7 @@ final class BillingService
 
         if (($payload['status'] ?? 'paid') === 'paid') {
             $plan = Plan::where('slug', $payload['plan_slug'])->first();
+
             return self::complete($payment, $ref, $plan);
         }
 

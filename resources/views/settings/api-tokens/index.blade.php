@@ -22,7 +22,7 @@
         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-auto">
-        <button class="btn btn-primary"><i class="bi bi-plus-circle"></i> {{ ui('create') }}</button>
+        <button class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> {{ ui('create') }}</button>
     </div>
 </form>
 

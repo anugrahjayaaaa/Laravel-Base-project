@@ -29,6 +29,7 @@ class Payment extends Model
         if ($value) {
             return $value;
         }
+
         // ponytail: derive from id so it is stable without a separate column write
         return 'INV-'.str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
     }

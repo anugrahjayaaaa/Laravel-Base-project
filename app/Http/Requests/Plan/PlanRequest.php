@@ -3,7 +3,9 @@
 namespace App\Http\Requests\Plan;
 
 use App\Models\Permission;
+use App\Models\Plan;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Validator;
 
 /**
@@ -36,7 +38,7 @@ class PlanRequest extends FormRequest
             'max_storage_mb' => 'nullable|integer|min:0',
             'allowed_permissions' => 'array',
             'allowed_permissions.*' => 'string|exists:permissions,name',
-            'features' => 'array',
+            'features' => 'nullable|array',
             'features.*' => 'string|in:'.implode(',', array_keys(config('pennant.features', []))),
         ];
     }
@@ -45,18 +47,16 @@ class PlanRequest extends FormRequest
     public function toPlanData(): array
     {
         $limits = [];
-        foreach (array_keys(\App\Models\Plan::LIMIT_KEYS) as $key) {
+        foreach (array_keys(Plan::LIMIT_KEYS) as $key) {
             if ($this->filled($key)) {
                 $limits[$key] = (int) $this->input($key);
             }
         }
-        // Subscriber can create roles iff the `roles` feature is enabled — no separate toggle.
-        $limits['can_create_roles'] = in_array('roles', $this->input('features', []), true);
         $limits['allowed_permissions'] = $this->input('allowed_permissions', []);
 
         return [
             'name' => $this->input('name'),
-            'slug' => $this->input('slug') ?: \Illuminate\Support\Str::slug($this->input('name')),
+            'slug' => $this->input('slug') ?: Str::slug($this->input('name')),
             'price_monthly' => $this->input('price_monthly'),
             'billing_period' => $this->input('billing_period'),
             'is_active' => $this->boolean('is_active'),
@@ -76,7 +76,7 @@ class PlanRequest extends FormRequest
                 if ($maxFeatures > 0 && count($features) > $maxFeatures) {
                     $validator->errors()->add(
                         'features',
-                        __('plans.feature_limit_exceeded', ['max' => $maxFeatures])
+                        __('messages.feature_limit_exceeded', ['max' => $maxFeatures])
                     );
                 }
 
@@ -90,7 +90,7 @@ class PlanRequest extends FormRequest
                     if (count($valid) !== count($allowed)) {
                         $validator->errors()->add(
                             'allowed_permissions',
-                            __('plans.permission_feature_mismatch')
+                            __('messages.permission_feature_mismatch')
                         );
                     }
                 }

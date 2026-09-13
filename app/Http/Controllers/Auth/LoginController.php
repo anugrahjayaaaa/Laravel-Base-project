@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Concerns\Auditable;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
-use Illuminate\Auth\Events\Login;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
+    use Auditable;
+
     public function show()
     {
         return view('auth.login');
@@ -72,6 +74,8 @@ class LoginController extends Controller
             // On the 5th failed attempt, lock the account for 15 minutes (DB-persisted)
             if (RateLimiter::attempts($userKey) >= 5 && $user) {
                 $user->update(['locked_until' => now()->addMinutes(15)]);
+
+                $this->audit($user, 'account_locked_auto', $user);
             }
 
             throw ValidationException::withMessages([
@@ -79,9 +83,17 @@ class LoginController extends Controller
             ]);
         }
 
-        // ponytail: attempt() may not fire Login event under test session guard; dispatch explicitly so audit is consistent
-        event(new Login('web', $user, $request->boolean('remember')));
+        // ponytail: MustVerifyEmail blocks protected routes, but does NOT block login itself —
+        // reject login outright for unverified emails (doc auth.md §Email verification).
+        if (! $user->hasVerifiedEmail()) {
+            Auth::guard('web')->logout();
+            throw ValidationException::withMessages([
+                'email' => __('messages.email_not_verified'),
+            ]);
+        }
 
+        // Login event is dispatched by Auth::attempt() -> LogAuthentication listener.
+        // No manual event dispatch here; double-fire would duplicate the login_success audit row.
         RateLimiter::clear($userKey);
         RateLimiter::clear($throttleKey);
         // Clear any expired lock marker on successful login
@@ -110,7 +122,8 @@ class LoginController extends Controller
 
         if (! $user->hasVerifiedEmail()) {
             $user->markEmailAsVerified();
-            activity()->causedBy($user)->performedOn($user)->log('email_verified');
+
+            $this->audit($user, 'email_verified', $user);
         }
 
         return redirect()->route('login')
@@ -138,7 +151,7 @@ class LoginController extends Controller
     /**
      * Log the current user out and destroy the session.
      */
-    public function destroy(LoginRequest $request): RedirectResponse
+    public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
         $request->session()->invalidate();

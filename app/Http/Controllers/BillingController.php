@@ -7,6 +7,7 @@ use App\Models\License;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Services\BillingService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,7 +41,7 @@ class BillingController extends Controller
     {
         abort_unless($payment->user_id === auth()->id(), 403);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing.invoice', compact('payment'));
+        $pdf = Pdf::loadView('billing.invoice', compact('payment'));
 
         return $pdf->download($payment->invoice_no.'.pdf');
     }
