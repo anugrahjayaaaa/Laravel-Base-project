@@ -84,16 +84,17 @@ it('changes own password', function () {
 
 it('sends verification email on admin create', function () {
     $role = Role::first();
+    $ts = time();
     $this->post(route('users.store'), [
         'name' => 'Verify Me',
-        'username' => 'verif'.time(),
-        'email' => 'verify'.time().'@example.com',
+        'username' => 'verif'.$ts,
+        'email' => 'verify'.$ts.'@example.com',
         'password' => 'Secret@123456',
         'password_confirmation' => 'Secret@123456',
         'roles' => [$role->id],
     ])->assertRedirect(route('users.index'));
 
-    $u = User::where('username', 'verif'.time())->first();
+    $u = User::where('username', 'verif'.$ts)->first();
     expect($u)->not->toBeNull();
     // Current behavior: admin-created user is unverified by default in this path.
     expect($u->email_verified_at)->toBeNull();

@@ -52,7 +52,12 @@ class AppServiceProvider extends ServiceProvider
                         return null;
                     }
 
-                    if (! PlanService::for($user)->allows($ability) && Feature::active('plans')) {
+                    // Plan boundary acts as capability ceiling regardless of the 'plans'
+                    // management flag state — the two are separate concerns:
+                    // 'plans' flag gates the /plans UI module, plan boundary gates every
+                    // domain permission. Removing Feature::active('plans') here so plan
+                    // deny always applies (free plan = deny all domain perms).
+                    if (! PlanService::for($user)->allows($ability)) {
                         return false;
                     }
                 }

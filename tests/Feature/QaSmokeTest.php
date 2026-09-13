@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\PlanService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Pennant\Feature;
 
 uses(RefreshDatabase::class);
 beforeEach(fn () => $this->seed());
@@ -14,6 +15,10 @@ it('checkout route exists and method is reachable (dummy mode)', function () {
     config(['billing.fake' => true]);
     $user = User::where('email', 'admin@laravel-base.local')->first();
     $this->actingAs($user);
+
+    // Billing module is disabled by design (feature:billing flag) —
+    // activate it temporarily to test the checkout flow.
+    Feature::activate('billing');
 
     Plan::firstOrCreate(['slug' => 'pro'], ['name' => 'Pro', 'price_monthly' => 99000,
         'is_active' => true, 'billing_period' => 'monthly',

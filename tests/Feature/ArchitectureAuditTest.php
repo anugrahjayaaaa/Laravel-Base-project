@@ -741,8 +741,8 @@ it('Superadmin can perform supported administrative operations', function () {
     // Features page (needs feature.manage)
     $this->get(route('features.index'))->assertOk();
 
-    // Plans page (needs feature.manage)
-    $this->get(route('plans.index'))->assertOk();
+    // Plans page (needs feature:plans — disabled by design in this base project)
+    $this->get(route('plans.index'))->assertNotFound();
 
     // Roles page (needs role.view)
     $this->get(route('roles.index'))->assertOk();
