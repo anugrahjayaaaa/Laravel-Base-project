@@ -41,12 +41,15 @@ class AppServiceProvider extends ServiceProvider
                     // RBAC system permissions (role.*, permission.*) are governed by
                     // the user's role, not the plan tier — the plan boundary only caps
                     // assignable domain permissions (enforced separately in RoleController::filterPermissions).
-                    if (str_starts_with($ability, 'role.') || str_starts_with($ability, 'permission.')) {
+                    // feature.manage is also exempt — it's a platform admin capability,
+                    // not a domain feature. Without this, an admin user on free plan
+                    // would lose access to features/settings management pages.
+                    if (str_starts_with($ability, 'role.') || str_starts_with($ability, 'permission.') || $ability === 'feature.manage') {
                         return null;
                     }
 
                     // SUPERADMIN: platform-level super-admins (via the 'super-admin' role)
-                    // bypass the Plan entitlement boundary. They are still subject to
+                    // bypass the Plan entitlement boundary but are still subject to
                     // Pennant feature flags (checked at route middleware level, not here).
                     if ($user->isSuperAdmin()) {
                         return null;
